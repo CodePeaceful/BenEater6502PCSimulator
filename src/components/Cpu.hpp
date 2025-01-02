@@ -22,6 +22,7 @@ private:
     unsigned short programCounter;
     unsigned char IR; // instruction register
     unsigned char TCU; // timing control unit
+    unsigned char A; // A register
 
 // helpers unclear internal representation
     unsigned char resetTimer;
@@ -31,6 +32,9 @@ private:
 
 // const times
     const unsigned char implied = 2;
+    const unsigned char imidiate = 2;
+    const unsigned char read_modify_write = 2;
+    const unsigned char absolute = 4;
 
 public:
     Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, const bool& _RDY, const bool& _IRQB, bool& _MLB,
