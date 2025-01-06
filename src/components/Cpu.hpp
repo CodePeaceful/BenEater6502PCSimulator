@@ -28,13 +28,15 @@ private:
     unsigned char resetTimer;
     unsigned char instructionBufferLow;
     unsigned char instructionBufferHigh;
+    bool carry;
     void fetch();
 
-// const times
-    const unsigned char implied = 2;
-    const unsigned char imidiate = 2;
-    const unsigned char read_modify_write = 2;
-    const unsigned char absolute = 4;
+// operations
+    void noop();
+    void loadAImidiate();
+    void storeAAtAbsoluteAddress();
+    void jumpAbsolute();
+    void rotateRightAccumulator();
 
 public:
     Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, const bool& _RDY, const bool& _IRQB, bool& _MLB,

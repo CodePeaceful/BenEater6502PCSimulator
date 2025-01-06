@@ -1,8 +1,10 @@
 #include "components/Cpu.hpp"
 #include "components/Eeprom32k.hpp"
 #include "components/VersitileInterfaceAdapter.hpp"
+#include "assembler/Assembler.hpp"
 
 #include <iostream>
+#include <bitset>
 
 int main() {
     unsigned char data = 0xEA;
@@ -34,39 +36,8 @@ int main() {
     bool viaIRQB; // interupt?
 
     Eeprom32k eeprom(addressModified, data);
-    {
-        std::array<unsigned char, 0x8000> rom;
-        rom.fill(0xEA);
-        rom[0x7FFC] = 0;
-        rom[0x7FFD] = 0x80;
+    eeprom.program(assemble<0x8000>("program.6502"));
 
-        rom[0] = 0xA9;
-        rom[1] = 0xff;
-
-        rom[2] = 0x8D;
-        rom[3] = 0x02;
-        rom[4] = 0x60;
-
-        rom[5] = 0xA9;
-        rom[6] = 0x55;
-
-        rom[7] = 0x8D;
-        rom[8] = 0x00;
-        rom[9] = 0x60;
-
-        rom[10] = 0xA9;
-        rom[11] = 0xAA;
-
-        rom[12] = 0x8D;
-        rom[13] = 0x00;
-        rom[14] = 0x60;
-
-        rom[15] = 0x4C;
-        rom[16] = 0x05;
-        rom[17] = 0x80;
-
-        eeprom.program(rom);
-    }
     Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB);
     cpu.reset();
     VersitileInterfaceAdapter via(RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, viaIRQB);
@@ -82,6 +53,7 @@ int main() {
         via.cycle();
         addressModified = address ^ 0x8000; // to set eeprom to second memory half
         eeprom.cycle();
-        std::cout << std::hex << (int)viaPortB << '\n';
+        std::bitset<8> x(viaPortB);
+        std::cout << x << '\n';
     }
 }

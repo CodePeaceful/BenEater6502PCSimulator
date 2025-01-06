@@ -10,8 +10,10 @@
 				"-g",
 				"${workspaceFolder}\\src\\main.cpp",
 				"${workspaceFolder}\\src\\components\\*.cpp",
+				"${workspaceFolder}\\src\\assembler\\*.cpp",
 				"-o",
-				"${workspaceFolder}\\build\\computer.exe"
+				"${workspaceFolder}\\build\\computer.exe",
+				"-std=c++23"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

@@ -1,2 +1,4 @@
 build
+doc
 .vscode/settings.json
+src/program.6502
