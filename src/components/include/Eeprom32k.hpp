@@ -9,7 +9,7 @@ private:
     unsigned char& dataPins; // D7 - D0
     // ignoring output enable
 
-    // internals
+// internals
     std::array<unsigned char, 0x8000> data;
 
 public:

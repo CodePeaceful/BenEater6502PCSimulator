@@ -23,20 +23,27 @@ private:
     unsigned char IR; // instruction register
     unsigned char TCU; // timing control unit
     unsigned char A; // A register
+    unsigned char X;
+    unsigned char Y;
+    unsigned char stackPointer;
+    unsigned char prozessorStatus;
 
 // helpers unclear internal representation
     unsigned char resetTimer;
     unsigned char instructionBufferLow;
     unsigned char instructionBufferHigh;
-    bool carry;
     void fetch();
 
 // operations
-    void noop();
-    void loadAImidiate();
-    void storeAAtAbsoluteAddress();
+    void jumpToSubroutine();
     void jumpAbsolute();
+    void returnFromSubroutine();
     void rotateRightAccumulator();
+    void storeAAtAbsoluteAddress();
+    void transferXToStackpointer();
+    void loadXImidiate();
+    void loadAImidiate();
+    void noop();
 
 public:
     Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, const bool& _RDY, const bool& _IRQB, bool& _MLB,

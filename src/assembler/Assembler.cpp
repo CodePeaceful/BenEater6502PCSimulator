@@ -250,10 +250,10 @@ unsigned long getValue(const std::string& value) {
     throw std::runtime_error(value + " not a value");
 }
 
-unsigned getOperationByteCount(const std::string& line) {
-    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c);}) | std::views::transform([] (char c) {return std::tolower(c);}) | std::ranges::to<std::string>();
-    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c);}) |
-        std::views::take_while([] (char c) {return std::isgraph(c);}) | std::ranges::to<std::string>();
+unsigned getOperationByteCount(const std::string& line, const std::map<std::string, unsigned char>& byteSymbols) {
+    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c); }) | std::views::transform([] (char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
+    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
+        std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
 
     if (address.size() == 0 || address[0] == '/') {
         if (accumulatorORImpliedORStack.contains(opName)) {
@@ -268,15 +268,22 @@ unsigned getOperationByteCount(const std::string& line) {
         throw std::runtime_error(opName + " is invalid with immediate");
     }
     if (address[0] == '(') {
-        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')';}) | std::ranges::to<std::string>();
-        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')';}) | std::views::drop(1) | std::ranges::to<std::string>();
+        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')'; }) | std::ranges::to<std::string>();
+        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
         if (afterBracket.size()) {
             if (afterBracket != ",Y") {
                 throw std::runtime_error("invalid address: " + line);
             }
-            auto i = getValue(inBracket);
-            if (std::bit_width(i) > 8) {
-                throw std::runtime_error("invalid address: " + line);
+            if (std::isalpha(inBracket[0])) {
+                if (!byteSymbols.contains(inBracket)) {
+                    throw std::runtime_error("invalid symbol:" + inBracket);
+                }
+            }
+            else {
+                auto i = getValue(inBracket);
+                if (std::bit_width(i) > 8) {
+                    throw std::runtime_error("invalid address: " + line);
+                }
             }
             if (zeroPageIndirectWithY.contains(opName)) {
                 return 2;
@@ -288,6 +295,11 @@ unsigned getOperationByteCount(const std::string& line) {
                 throw std::runtime_error("invalid address: " + line);
             }
             if (std::isalpha(inBracket[0])) { // should be label
+                if (byteSymbols.contains(inBracket.substr(0, inBracket.find_last_of(',')))) {
+                    if (zeroPageWithXIndirect.contains(opName)) {
+                        return 2;
+                    }
+                }
                 if (absoluteWithXIndirect.contains(opName)) {
                     return 3;
                 }
@@ -308,6 +320,11 @@ unsigned getOperationByteCount(const std::string& line) {
             throw std::runtime_error("something wrong at: " + line);
         }
         if (std::isalpha(inBracket[0])) { // should be label
+            if (byteSymbols.contains(inBracket)) {
+                if (zeroPageIndirect.contains(opName)) {
+                    return 2;
+                }
+            }
             if (absoluteIndirect.contains(opName)) {
                 return 3;
             }
@@ -330,6 +347,11 @@ unsigned getOperationByteCount(const std::string& line) {
     if (address.contains(',')) {
         if (address.ends_with(",X")) {
             if (std::isalpha(address[0])) { // should be label
+                if (byteSymbols.contains(address.substr(0, address.find_last_of(',')))) {
+                    if (zeroPageWithX.contains(opName)) {
+                        return 2;
+                    }
+                }
                 if (absoluteWithX.contains(opName)) {
                     return 3;
                 }
@@ -351,6 +373,11 @@ unsigned getOperationByteCount(const std::string& line) {
         }
         if (address.ends_with(",Y")) {
             if (std::isalpha(address[0])) { // should be label
+                if (byteSymbols.contains(address.substr(0, address.find_last_of(',')))) {
+                    if (zeroPageWithY.contains(opName)) {
+                        return 2;
+                    }
+                }
                 if (absoluteWithY.contains(opName)) {
                     return 3;
                 }
@@ -373,6 +400,11 @@ unsigned getOperationByteCount(const std::string& line) {
         throw std::runtime_error("invalid address: " + line);
     }
     if (std::isalpha(address[0])) { // should be label
+        if (byteSymbols.contains(address)) {
+            if (zeroPageORRelative.contains(opName)) {
+                return 2;
+            }
+        }
         if (absolute.contains(opName)) {
             return 3;
         }
@@ -393,11 +425,11 @@ unsigned getOperationByteCount(const std::string& line) {
     throw std::runtime_error("something wrong at: " + line);
 }
 
-unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, unsigned short>& labels, unsigned short& globalStart) {
+unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, unsigned short>& labels, unsigned short& globalStart, std::map<std::string, unsigned char>& byteSymbols) {
     unsigned currentPos = 0;
     bool startSet = false;
     for (const auto& line : file) {
-        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c);})) {
+        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c); })) {
             continue;
         }
         if (std::isgraph(line[0])) {
@@ -405,24 +437,41 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
                 throw std::runtime_error("invalid label: " + line);
             }
             std::string label = line.substr(0, line.find(':'));
-            if (labels.contains(label)) {
-                throw std::runtime_error("duplicate label: " + label);
+            std::string symbol = line.substr(0, line.find('='));
+            if (labels.contains(label) || byteSymbols.contains(label) || labels.contains(symbol) || byteSymbols.contains(symbol)) {
+                throw std::runtime_error("duplicate label: " + line);
             }
-            if (std::any_of(label.begin(), label.end(), [] (char c) {return !std::isalnum(c);})) {
+            if (label.size() > symbol.size()) {
+                auto symbolValue = line | std::views::drop_while([] (char c) {return c != '='; }) |
+                    std::views::drop(1) | std::views::drop_while([] (char c) {return !std::isgraph(c); }) |
+                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+
+                auto i = getValue(symbolValue);
+                if (std::bit_width(i) <= 8) {
+                    byteSymbols[symbol] = i;
+                    continue;
+                }
+                if (std::bit_width(i) > 16) {
+                    throw std::runtime_error("symbol: " + line + " out of 16Bit range");
+                }
+                labels[symbol] = i;
+                continue;
+            }
+            if (std::any_of(label.begin(), label.end(), [] (char c) {return !std::isalnum(c); })) {
                 throw std::runtime_error("invalid label: " + label);
             }
             labels[label] = currentPos;
             startSet = true;
             continue;
         }
-        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c);}) | std::ranges::to<std::string>();
+        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
         if (subline[0] == '.') {
             if (subline.starts_with(".org")) {
                 if (subline.size() == 4 || !std::isspace(subline[4])) {
                     throw std::runtime_error("no origin value");
                 }
-                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c);}) |
-                    std::views::take_while([] (char c) {return std::isgraph(c);}) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
+                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 if (valueLine.size() == 0) {
                     throw std::runtime_error("no origin value");
                 }
@@ -447,37 +496,55 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
             }
             throw std::runtime_error("unknown . command: " + line);
         }
-        currentPos += getOperationByteCount(subline);
+        currentPos += getOperationByteCount(subline, byteSymbols);
     }
     return currentPos;
 }
 
 // what ever the first pass checked is not checked again here
-std::vector<unsigned char> getOperationBytes(const std::string& line, const std::map<std::string, unsigned short>& labels) {
-    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c);}) | std::views::transform([] (char c) {return std::tolower(c);}) | std::ranges::to<std::string>();
-    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c);}) |
-        std::views::take_while([] (char c) {return std::isgraph(c);}) | std::ranges::to<std::string>();
+std::vector<unsigned char> getOperationBytes(const std::string& line, const std::map<std::string, unsigned short>& labels, const std::map<std::string, unsigned char>& byteSymbols) {
+
+    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c); }) | std::views::transform([] (char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
+
+    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
+        std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
 
     if (address.size() == 0 || address[0] == '/') {
         return { accumulatorORImpliedORStack.at(opName) };
     }
     if (address[0] == '#') {
-        auto i = getValue(address.substr(1, address.size()));
+        auto s = address.substr(1, address.size());
+        if (std::isalpha(address[1])) {
+            if (byteSymbols.contains(s)) {
+                return { immediate.at(opName), byteSymbols.at(s) };
+            }
+            throw std::runtime_error("unknown Symbol: " + s);
+        }
+        auto i = getValue(s);
         if (std::bit_width(i) > 8) {
             throw std::runtime_error("immediate value: " + address + " out of 8 bit range");
         }
         return { immediate.at(opName), (unsigned char)i };
     }
     if (address[0] == '(') {
-        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')';}) | std::ranges::to<std::string>();
-        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')';}) | std::views::drop(1) | std::ranges::to<std::string>();
+        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')'; }) | std::ranges::to<std::string>();
+        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
         if (afterBracket.size()) {
+            if (std::isalpha(inBracket[0])) {
+                return { zeroPageIndirectWithY.at(opName), byteSymbols.at(inBracket) };
+            }
             auto i = getValue(inBracket);
             return { zeroPageIndirectWithY.at(opName), (unsigned char)i };
         }
         if (inBracket.contains(',')) {
             if (std::isalpha(inBracket[0])) { // should be label
                 auto label = inBracket.substr(0, inBracket.find_last_of(','));
+                if (byteSymbols.contains(label)) {
+                    if (zeroPageWithXIndirect.contains(opName)) {
+                        return { zeroPageWithXIndirect.at(opName), byteSymbols.at(label) };
+                    }
+                    return { absoluteWithXIndirect.at(opName), byteSymbols.at(label), 0 };
+                }
                 if (!labels.contains(label)) {
                     throw std::runtime_error("label: " + label + " not declared");
                 }
@@ -497,6 +564,12 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
             return { absoluteWithXIndirect.at(opName), c2, c1 };
         }
         if (std::isalpha(inBracket[0])) { // should be label
+            if (byteSymbols.contains(inBracket)) {
+                if (zeroPageIndirect.contains(opName)) {
+                    return { zeroPageIndirect.at(opName), byteSymbols.at(inBracket) };
+                }
+                return { absoluteIndirect.at(opName), byteSymbols.at(inBracket), 0 };
+            }
             if (!labels.contains(inBracket)) {
                 throw std::runtime_error("label: " + inBracket + " not declared");
             }
@@ -519,6 +592,12 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
         if (address.ends_with(",X")) {
             if (std::isalpha(address[0])) { // should be label
                 auto label = address.substr(0, address.find_last_of(','));
+                if (byteSymbols.contains(label)) {
+                    if (zeroPageWithX.contains(opName)) {
+                        return { zeroPageWithX.at(opName), byteSymbols.at(label) };
+                    }
+                    return { absoluteWithX.at(opName), byteSymbols.at(label), 0 };
+                }
                 if (!labels.contains(label)) {
                     throw std::runtime_error("label: " + label + " not declared");
                 }
@@ -536,11 +615,16 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
             unsigned char c1 = i >> 8;
             unsigned char c2 = i & 0x00FF;
             return { absoluteWithX.at(opName), c2, c1 };
-            throw std::runtime_error("something wrong at: " + line);
         }
         if (address.ends_with(",Y")) {
             if (std::isalpha(address[0])) { // should be label
                 auto label = address.substr(0, address.find_last_of(','));
+                if (byteSymbols.contains(label)) {
+                    if (zeroPageWithY.contains(opName)) {
+                        return { zeroPageWithY.at(opName), byteSymbols.at(label) };
+                    }
+                    return { absoluteWithY.at(opName), byteSymbols.at(label), 0 };
+                }
                 if (!labels.contains(label)) {
                     throw std::runtime_error("label: " + label + " not declared");
                 }
@@ -562,6 +646,12 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
         throw std::runtime_error("should have been thrown before");
     }
     if (std::isalpha(address[0])) { // should be label
+        if (byteSymbols.contains(address)) {
+            if (zeroPageORRelative.contains(opName)) {
+                return { zeroPageORRelative.at(opName), byteSymbols.at(address) };
+            }
+            return { absolute.at(opName), byteSymbols.at(address), 0 };
+        }
         if (!labels.contains(address)) {
             throw std::runtime_error("label: " + address + " not declared");
         }
@@ -582,11 +672,11 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
 }
 
 // no error checking where already done
-std::vector<unsigned char> secondPass(const std::vector<std::string>& file, const std::map<std::string, unsigned short>& labels, unsigned short globalStart, unsigned maxSize) {
+std::vector<unsigned char> secondPass(const std::vector<std::string>& file, const std::map<std::string, unsigned short>& labels, unsigned short globalStart, unsigned maxSize, const std::map<std::string, unsigned char>& byteSymbols) {
     std::vector<unsigned char> rom = std::views::repeat(0, maxSize) | std::ranges::to<std::vector<unsigned char>>();
     unsigned currentPos = globalStart;
     for (const auto& line : file) {
-        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c);})) {
+        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c); })) {
             continue;
         }
         if (std::isgraph(line[0])) {
@@ -596,21 +686,29 @@ std::vector<unsigned char> secondPass(const std::vector<std::string>& file, cons
             }
             continue;
         }
-        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c);}) | std::ranges::to<std::string>();
+        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
         if (subline[0] == '.') {
             if (subline.starts_with(".org")) {
-                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c);}) |
-                    std::views::take_while([] (char c) {return std::isgraph(c);}) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
+                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 unsigned long i = getValue(valueLine);
                 currentPos = i;
                 continue;
             }
             if (subline.starts_with(".word")) {
-                auto valueLine = subline | std::views::drop(5) | std::views::drop_while([] (char c) {return std::isspace(c);}) |
-                    std::views::take_while([] (char c) {return std::isgraph(c);}) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(5) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
+                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 unsigned long i;
                 if (std::isalpha(valueLine[0])) {
-                    i = labels.at(valueLine);
+                    if (labels.contains(valueLine)) {
+                        i = labels.at(valueLine);
+                    }
+                    else if (byteSymbols.contains(valueLine)) {
+                        i = byteSymbols.at(valueLine);
+                    }
+                    else {
+                        throw std::runtime_error("unknown Symbol: " + line);
+                    }
                 }
                 else {
                     i = getValue(valueLine);
@@ -627,8 +725,8 @@ std::vector<unsigned char> secondPass(const std::vector<std::string>& file, cons
             }
             throw std::runtime_error("unknown . command: " + line);
         }
-        auto command = getOperationBytes(subline, labels);
-        for (int i = 0; i < command.size(); ++i) {
+        auto command = getOperationBytes(subline, labels, byteSymbols);
+        for (auto i = 0ull; i < command.size(); ++i) {
             rom[currentPos + i - globalStart] = command[i];
         }
         currentPos += command.size();

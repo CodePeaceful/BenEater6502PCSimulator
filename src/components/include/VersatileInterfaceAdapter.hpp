@@ -1,6 +1,6 @@
 #pragma once
 
-class VersitileInterfaceAdapter
+class VersatileInterfaceAdapter
 {
 private:
 // pin referencens
@@ -29,7 +29,7 @@ private:
 
 
 public:
-    VersitileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B, unsigned char& _dataPins,
+    VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B, unsigned char& _dataPins,
         unsigned char& _portA, unsigned char& _portB, const bool& _RS0, const bool& _RS1, const bool& _RS2, const bool& _RS3,
         bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, const bool& _IRQB);
     void cycle();

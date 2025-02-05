@@ -7,8 +7,8 @@
 #include <map>
 #include <ranges>
 
-unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, unsigned short>& labels, unsigned short& globalStart);
-std::vector<unsigned char> secondPass(const std::vector<std::string>& file, const std::map<std::string, unsigned short>& labels, unsigned short globalStart, unsigned maxSize);
+unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, unsigned short>& labels, unsigned short& globalStart, std::map<std::string, unsigned char>& byteSymbols);
+std::vector<unsigned char> secondPass(const std::vector<std::string>& file, const std::map<std::string, unsigned short>& labels, unsigned short globalStart, unsigned maxSize, const std::map<std::string, unsigned char>& byteSymbols);
 
 template<unsigned romsize>
 std::array<unsigned char, romsize> assemble(std::string filename) {
@@ -16,6 +16,7 @@ std::array<unsigned char, romsize> assemble(std::string filename) {
     unsigned short globalStart = 0;
 
     std::map<std::string, unsigned short> labels;
+    std::map<std::string, unsigned char> byteSymbols;
 
     std::ifstream in(filename);
     if (!in.is_open()) {
@@ -27,11 +28,11 @@ std::array<unsigned char, romsize> assemble(std::string filename) {
         file.push_back(line);
     }
 
-    if (firstPass(file, labels, globalStart) > romsize + globalStart) {
+    if (firstPass(file, labels, globalStart, byteSymbols) > romsize + globalStart) {
         throw std::runtime_error("not enough rom");
     }
     int counter = 0;
-    for (auto c : secondPass(file, labels, globalStart, romsize)) {
+    for (auto c : secondPass(file, labels, globalStart, romsize, byteSymbols)) {
         rom[counter] = c;
         ++counter;
     }

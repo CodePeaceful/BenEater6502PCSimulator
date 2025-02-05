@@ -1,6 +1,6 @@
-#include "VersitileInterfaceAdapter.hpp"
+#include "VersatileInterfaceAdapter.hpp"
 
-VersitileInterfaceAdapter::VersitileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B,
+VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B,
     unsigned char& _dataPins, unsigned char& _portA, unsigned char& _portB,
     const bool& _RS0, const bool& _RS1, const bool& _RS2, const bool& _RS3,
     bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, const bool& _IRQB) :
@@ -8,7 +8,7 @@ VersitileInterfaceAdapter::VersitileInterfaceAdapter(const bool& _RWB, const boo
     RS0 { _RS0 }, RS1 { _RS1 }, RS2 { _RS2 }, RS3 { _RS3 }, CA1 { _CA1 }, CA2 { _CA2 }, CB1 { _CB1 }, CB2 { _CB2 },
     IRQB { _IRQB } {}
 
-void VersitileInterfaceAdapter::cycle() {
+void VersatileInterfaceAdapter::cycle() {
     if (!CS1 || CS2B)
         return; // not selected
 
@@ -154,7 +154,7 @@ void VersitileInterfaceAdapter::cycle() {
     return;
 }
 
-void VersitileInterfaceAdapter::reset() {
+void VersatileInterfaceAdapter::reset() {
     portADataDirection = 0;
     portBDataDirection = 0;
 }
