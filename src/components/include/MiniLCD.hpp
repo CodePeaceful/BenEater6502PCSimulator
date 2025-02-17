@@ -22,7 +22,7 @@ private:
 
 
 // Internals
-    unsigned char addressCounter;
+    unsigned char addressCounter { 0 };
     std::array<unsigned char, 80> displayDataRam;
     std::array<volatile unsigned char, 96> characterGeneratorRam;
 

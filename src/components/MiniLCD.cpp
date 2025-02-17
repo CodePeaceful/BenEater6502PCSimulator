@@ -141,7 +141,26 @@ void MiniLCD::cycleData() {
         }
         --addressCounter;
     }
-    addressCounter &= 0b01111111;
+    if (curserLine1) {
+        if (addressCounter == 255) {
+            addressCounter = 39;
+            return;
+        }
+        if (addressCounter == 40) {
+            addressCounter = 0;
+            return;
+        }
+    }
+    else {
+        if (addressCounter == 0x3f) {
+            addressCounter = 0x67;
+            return;
+        }
+        if (addressCounter == 0x68) {
+            addressCounter = 0x40;
+            return;
+        }
+    }
 }
 
 void MiniLCD::updateTexture() {
@@ -206,6 +225,7 @@ MiniLCD::MiniLCD(unsigned char& _data, const bool& _E, const bool& _RW, const bo
         bottomRow[i].scale(sf::Vector2f(2, 2));
         bottomRow[i].setPosition(sf::Vector2f(16 * i, 22));
     }
+    displayDataRam.fill(0x20);
 }
 
 void MiniLCD::draw(sf::RenderTarget& window) {

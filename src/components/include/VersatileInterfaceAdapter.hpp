@@ -18,7 +18,8 @@ private:
     bool& CA2; //??
     bool& CB1; //??
     bool& CB2; //??
-    const bool& IRQB; // interupt?
+    bool& IRQB; // interupt?
+    const bool& PHI2;
 
 // internals
     unsigned char portADataDirection; // PA7 - PA0
@@ -26,12 +27,13 @@ private:
     unsigned char portARegister; // PA7 - PA0
     unsigned char portBRegister; // PB7 - PB0
 
-
+// helpers
+    bool lastClockState { true };
 
 public:
     VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B, unsigned char& _dataPins,
         unsigned char& _portA, unsigned char& _portB, const bool& _RS0, const bool& _RS1, const bool& _RS2, const bool& _RS3,
-        bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, const bool& _IRQB);
+        bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, bool& _IRQB, const bool& _PHI2);
     void cycle();
     void reset();
 };

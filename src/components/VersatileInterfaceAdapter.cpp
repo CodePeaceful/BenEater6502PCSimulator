@@ -3,14 +3,20 @@
 VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B,
     unsigned char& _dataPins, unsigned char& _portA, unsigned char& _portB,
     const bool& _RS0, const bool& _RS1, const bool& _RS2, const bool& _RS3,
-    bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, const bool& _IRQB) :
+    bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, bool& _IRQB, const bool& _PHI2) :
     RWB { _RWB }, CS1 { _CS1 }, CS2B { _CS2B }, dataPins { _dataPins }, portA { _portA }, portB { _portB },
     RS0 { _RS0 }, RS1 { _RS1 }, RS2 { _RS2 }, RS3 { _RS3 }, CA1 { _CA1 }, CA2 { _CA2 }, CB1 { _CB1 }, CB2 { _CB2 },
-    IRQB { _IRQB } {}
+    IRQB { _IRQB }, PHI2 { _PHI2 } {}
 
 void VersatileInterfaceAdapter::cycle() {
+    if (lastClockState == PHI2) {
+        return;
+    }
+    lastClockState = PHI2;
+
     if (!CS1 || CS2B)
         return; // not selected
+
 
     if (RS0) {
         if (RS1) {
@@ -54,23 +60,28 @@ void VersatileInterfaceAdapter::cycle() {
         }
         // IO A
         if (RWB) {
-            portARegister = portA;
-            for (unsigned char i = 1; i != 0; i = i << 1) {
-                if (i & portADataDirection) {
-                    // empty
-                }
-                else {
-                    if (i & portARegister) {
-                        dataPins |= i;
+            if (!PHI2) {
+                portARegister = portA;
+                for (unsigned char i = 1; i != 0; i = i << 1) {
+                    if (i & portADataDirection) {
+                        // empty
                     }
                     else {
-                        dataPins &= ~i;
+                        if (i & portARegister) {
+                            dataPins |= i;
+                        }
+                        else {
+                            dataPins &= ~i;
+                        }
                     }
                 }
             }
             return;
         }
-        portARegister = dataPins;
+        if (!PHI2) {
+            portARegister = dataPins;
+            return;
+        }
         for (unsigned char i = 1; i != 0; i = i << 1) {
             if (i & portADataDirection) {
                 if (i & portARegister) {
@@ -124,23 +135,28 @@ void VersatileInterfaceAdapter::cycle() {
     }
     // IO B
     if (RWB) {
-        portBRegister = portB;
-        for (unsigned char i = 1; i != 0; i = i << 1) {
-            if (i & portBDataDirection) {
-                // empty
-            }
-            else {
-                if (i & portBRegister) {
-                    dataPins |= i;
+        if (!PHI2) {
+            portBRegister = portB;
+            for (unsigned char i = 1; i != 0; i = i << 1) {
+                if (i & portBDataDirection) {
+                    // empty
                 }
                 else {
-                    dataPins &= ~i;
+                    if (i & portBRegister) {
+                        dataPins |= i;
+                    }
+                    else {
+                        dataPins &= ~i;
+                    }
                 }
             }
         }
         return;
     }
-    portBRegister = dataPins;
+    if (!PHI2) {
+        portBRegister = dataPins;
+        return;
+    }
     for (unsigned char i = 1; i != 0; i = i << 1) {
         if (i & portBDataDirection) {
             if (i & portBRegister) {
