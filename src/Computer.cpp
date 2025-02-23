@@ -7,10 +7,10 @@
 #include <SFML/Graphics.hpp>
 namespace fs = std::filesystem;
 
-Computer::Computer() : cpu { data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O },
-rom { addressModifiedRom, data }, ram { addressModifiedRam, data, ramOutputDisable, RWB },
-via { RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2 },
-screen { viaPortB, e, rw, rs } {
+Computer::Computer() : cpu{ data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O },
+rom{ addressModifiedRom, data }, ram{ addressModifiedRam, data, ramOutputDisable, RWB },
+via{ RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2 },
+screen{ viaPortB, e, rw, rs } {
     cpu.reset();
     via.reset();
 }
@@ -58,7 +58,7 @@ void Computer::run() {
 
         PHI2 = !PHI2;
         if (PHI2)
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
 }
 
