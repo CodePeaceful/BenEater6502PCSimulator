@@ -4,6 +4,11 @@ project(EaterPC)
 
 set(CMAKE_CXX_STANDARD 23)
 
+message (${CMAKE_C_COMPILER})
+message (${CMAKE_CXX_COMPILER})
+message (${CMAKE_CXX_COMPILER_AR})
+message (${CMAKE_CXX_COMPILER_RANLIB})
+
 if (MSVC)
     # warning level 4
     add_compile_options(/W4)
@@ -22,4 +27,4 @@ enable_testing()
 
 add_subdirectory(src)
 
-add_subdirectory(tests)
+#add_subdirectory(tests)

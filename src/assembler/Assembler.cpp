@@ -2,7 +2,7 @@
 
 #include <bit>
 
-const std::map<std::string, unsigned char> accumulatorORImpliedORStack {
+const std::map<std::string, unsigned char> accumulatorORImpliedORStack{
     { "asl", 0x0A },
     { "clc", 0x18 },
     { "cld", 0xD8 },
@@ -40,7 +40,7 @@ const std::map<std::string, unsigned char> accumulatorORImpliedORStack {
     { "rty", 0x40 },
     { "rts", 0x60 }
 };
-const std::map<std::string, unsigned char> immediate {
+const std::map<std::string, unsigned char> immediate{
     { "adc", 0x69 },
     { "and", 0x29 },
     { "cmp", 0xC9 },
@@ -53,7 +53,7 @@ const std::map<std::string, unsigned char> immediate {
     { "ora", 0x09 },
     { "sbc", 0xE9 }
 };
-const std::map<std::string, unsigned char> absolute {
+const std::map<std::string, unsigned char> absolute{
     { "adc", 0x6D },
     { "and", 0x2D },
     { "asl", 0x0E },
@@ -81,10 +81,10 @@ const std::map<std::string, unsigned char> absolute {
     { "trb", 0x1C },
     { "tsb", 0x0C }
 };
-const std::map<std::string, unsigned char> absoluteWithXIndirect {
+const std::map<std::string, unsigned char> absoluteWithXIndirect{
     { "jmp", 0x7C }
 };
-const std::map<std::string, unsigned char> absoluteWithX {
+const std::map<std::string, unsigned char> absoluteWithX{
     { "adc", 0x7D },
     { "and", 0x3D },
     { "asl", 0x1E },
@@ -103,7 +103,7 @@ const std::map<std::string, unsigned char> absoluteWithX {
     { "sta", 0x9D },
     { "stz", 0x9E }
 };
-const std::map<std::string, unsigned char> absoluteWithY {
+const std::map<std::string, unsigned char> absoluteWithY{
     { "adc", 0x79 },
     { "and", 0x39 },
     { "cmp", 0xD9 },
@@ -114,10 +114,10 @@ const std::map<std::string, unsigned char> absoluteWithY {
     { "sbc", 0xF9 },
     { "sta", 0x99 }
 };
-const std::map<std::string, unsigned char> absoluteIndirect {
+const std::map<std::string, unsigned char> absoluteIndirect{
     { "jmp", 0x6C }
 };
-const std::map<std::string, unsigned char> zeroPageORRelative {
+const std::map<std::string, unsigned char> zeroPageORRelative{
     { "adc", 0x65 },
     { "and", 0x25 },
     { "asl", 0x06 },
@@ -184,7 +184,7 @@ const std::map<std::string, unsigned char> zeroPageORRelative {
     { "trb", 0x14 },
     { "tsb", 0x04 }
 };
-const std::map<std::string, unsigned char> zeroPageWithXIndirect {
+const std::map<std::string, unsigned char> zeroPageWithXIndirect{
     { "adc", 0x61 },
     { "and", 0x21 },
     { "cmp", 0xC1 },
@@ -194,7 +194,7 @@ const std::map<std::string, unsigned char> zeroPageWithXIndirect {
     { "sbc", 0xE1 },
     { "sta", 0x81 }
 };
-const std::map<std::string, unsigned char> zeroPageWithX {
+const std::map<std::string, unsigned char> zeroPageWithX{
     { "adc", 0x75 },
     { "and", 0x35 },
     { "asl", 0x16 },
@@ -212,11 +212,11 @@ const std::map<std::string, unsigned char> zeroPageWithX {
     { "sbc", 0xF5 },
     { "sta", 0x95 }
 };
-const std::map<std::string, unsigned char> zeroPageWithY {
+const std::map<std::string, unsigned char> zeroPageWithY{
     { "ldx", 0xB6 },
     { "stx", 0x96 }
 };
-const std::map<std::string, unsigned char> zeroPageIndirect {
+const std::map<std::string, unsigned char> zeroPageIndirect{
     { "adc", 0x72 },
     { "and", 0x32 },
     { "cmp", 0xD2 },
@@ -226,7 +226,7 @@ const std::map<std::string, unsigned char> zeroPageIndirect {
     { "sbc", 0xF2 },
     { "sta", 0x92 }
 };
-const std::map<std::string, unsigned char> zeroPageIndirectWithY {
+const std::map<std::string, unsigned char> zeroPageIndirectWithY{
     { "adc", 0x71 },
     { "and", 0x31 },
     { "cmp", 0xD1 },
@@ -251,9 +251,9 @@ unsigned long getValue(const std::string& value) {
 }
 
 unsigned getOperationByteCount(const std::string& line, const std::map<std::string, unsigned char>& byteSymbols) {
-    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c); }) | std::views::transform([] (char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
-    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
-        std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+    auto opName = line | std::views::take_while([](char c) {return std::isgraph(c); }) | std::views::transform([](char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
+    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([](char c) {return std::isspace(c); }) |
+        std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
 
     if (address.size() == 0 || address[0] == '/') {
         if (accumulatorORImpliedORStack.contains(opName)) {
@@ -268,8 +268,8 @@ unsigned getOperationByteCount(const std::string& line, const std::map<std::stri
         throw std::runtime_error(opName + " is invalid with immediate");
     }
     if (address[0] == '(') {
-        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')'; }) | std::ranges::to<std::string>();
-        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
+        auto inBracket = address | std::views::drop(1) | std::views::take_while([](char c) {return c != ')'; }) | std::ranges::to<std::string>();
+        auto afterBracket = address | std::views::drop_while([](char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
         if (afterBracket.size()) {
             if (afterBracket != ",Y") {
                 throw std::runtime_error("invalid address: " + line);
@@ -429,7 +429,7 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
     unsigned currentPos = 0;
     bool startSet = false;
     for (const auto& line : file) {
-        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c); })) {
+        if (std::none_of(line.begin(), line.end(), [](char c) {return std::isgraph(c); })) {
             continue;
         }
         if (std::isgraph(line[0])) {
@@ -442,9 +442,9 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
                 throw std::runtime_error("duplicate label: " + line);
             }
             if (label.size() > symbol.size()) {
-                auto symbolValue = line | std::views::drop_while([] (char c) {return c != '='; }) |
-                    std::views::drop(1) | std::views::drop_while([] (char c) {return !std::isgraph(c); }) |
-                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+                auto symbolValue = line | std::views::drop_while([](char c) {return c != '='; }) |
+                    std::views::drop(1) | std::views::drop_while([](char c) {return !std::isgraph(c); }) |
+                    std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
 
                 auto i = getValue(symbolValue);
                 if (std::bit_width(i) <= 8) {
@@ -457,21 +457,21 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
                 labels[symbol] = i;
                 continue;
             }
-            if (std::any_of(label.begin(), label.end(), [] (char c) {return !std::isalnum(c); })) {
+            if (std::any_of(label.begin(), label.end(), [](char c) {return !std::isalnum(c); })) {
                 throw std::runtime_error("invalid label: " + label);
             }
             labels[label] = currentPos;
             startSet = true;
             continue;
         }
-        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
+        std::string subline = line | std::views::drop_while([](char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
         if (subline[0] == '.') {
             if (subline.starts_with(".org")) {
                 if (subline.size() == 4 || !std::isspace(subline[4])) {
                     throw std::runtime_error("no origin value");
                 }
-                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
-                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([](char c) {return std::isspace(c); }) |
+                    std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 if (valueLine.size() == 0) {
                     throw std::runtime_error("no origin value");
                 }
@@ -504,10 +504,10 @@ unsigned firstPass(const std::vector<std::string>& file, std::map<std::string, u
 // what ever the first pass checked is not checked again here
 std::vector<unsigned char> getOperationBytes(const std::string& line, const std::map<std::string, unsigned short>& labels, const std::map<std::string, unsigned char>& byteSymbols) {
 
-    auto opName = line | std::views::take_while([] (char c) {return std::isgraph(c); }) | std::views::transform([] (char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
+    auto opName = line | std::views::take_while([](char c) {return std::isgraph(c); }) | std::views::transform([](char c) {return std::tolower(c); }) | std::ranges::to<std::string>();
 
-    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
-        std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+    auto address = line | std::views::drop(opName.size()) | std::views::drop_while([](char c) {return std::isspace(c); }) |
+        std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
 
     if (address.size() == 0 || address[0] == '/') {
         return { accumulatorORImpliedORStack.at(opName) };
@@ -527,8 +527,8 @@ std::vector<unsigned char> getOperationBytes(const std::string& line, const std:
         return { immediate.at(opName), (unsigned char)i };
     }
     if (address[0] == '(') {
-        auto inBracket = address | std::views::drop(1) | std::views::take_while([] (char c) {return c != ')'; }) | std::ranges::to<std::string>();
-        auto afterBracket = address | std::views::drop_while([] (char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
+        auto inBracket = address | std::views::drop(1) | std::views::take_while([](char c) {return c != ')'; }) | std::ranges::to<std::string>();
+        auto afterBracket = address | std::views::drop_while([](char c) {return c != ')'; }) | std::views::drop(1) | std::ranges::to<std::string>();
         if (afterBracket.size()) {
             if (std::isalpha(inBracket[0])) {
                 return { zeroPageIndirectWithY.at(opName), byteSymbols.at(inBracket) };
@@ -676,7 +676,7 @@ std::vector<unsigned char> secondPass(const std::vector<std::string>& file, cons
     std::vector<unsigned char> rom = std::views::repeat(0, maxSize) | std::ranges::to<std::vector<unsigned char>>();
     unsigned currentPos = globalStart;
     for (const auto& line : file) {
-        if (std::none_of(line.begin(), line.end(), [] (char c) {return std::isgraph(c); })) {
+        if (std::none_of(line.begin(), line.end(), [](char c) {return std::isgraph(c); })) {
             continue;
         }
         if (std::isgraph(line[0])) {
@@ -686,18 +686,18 @@ std::vector<unsigned char> secondPass(const std::vector<std::string>& file, cons
             }
             continue;
         }
-        std::string subline = line | std::views::drop_while([] (char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
+        std::string subline = line | std::views::drop_while([](char c) {return std::isspace(c); }) | std::ranges::to<std::string>();
         if (subline[0] == '.') {
             if (subline.starts_with(".org")) {
-                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
-                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(4) | std::views::drop_while([](char c) {return std::isspace(c); }) |
+                    std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 unsigned long i = getValue(valueLine);
                 currentPos = i;
                 continue;
             }
             if (subline.starts_with(".word")) {
-                auto valueLine = subline | std::views::drop(5) | std::views::drop_while([] (char c) {return std::isspace(c); }) |
-                    std::views::take_while([] (char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
+                auto valueLine = subline | std::views::drop(5) | std::views::drop_while([](char c) {return std::isspace(c); }) |
+                    std::views::take_while([](char c) {return std::isgraph(c); }) | std::ranges::to<std::string>();
                 unsigned long i;
                 if (std::isalpha(valueLine[0])) {
                     if (labels.contains(valueLine)) {

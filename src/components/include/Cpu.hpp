@@ -3,7 +3,7 @@
 class Cpu
 {
 private:
-// pin references
+    // pin references
     unsigned char& data; // D7 - D0
     unsigned short& address; // A15 - A0
     bool& VPB; // Vector Pull
@@ -19,7 +19,7 @@ private:
     bool& PHI1O;
     bool& PHI2O;
 
-// internals
+    // internals
     unsigned short programCounter;
     unsigned char IR; // instruction register
     unsigned char TCU; // timing control unit
@@ -32,52 +32,68 @@ private:
     unsigned char dataBuffer;
     unsigned short addressBuffer;
     bool readWriteBuffer;
-    bool lastClockState { true };
+    bool lastClockState{ true };
 
-// helpers unclear internal representation
-    bool interuptRequested { false };
-    bool inbreak { false };
+    // helpers unclear internal representation
+    bool interuptRequested{ false };
+    bool inbreak{ false };
     unsigned char resetTimer;
     unsigned char instructionBufferLow;
     unsigned char instructionBufferHigh;
+
+    unsigned char writeBackCounter;
 
     void fetch();
     void toBus();
     void handleInterupt();
     void negativeZeroCheck(unsigned char value);
 
-// executions
-    void addWithCarry(unsigned char second);
-    void subtractWithCarry(unsigned char second);
-    [[nodiscard]] unsigned char testAndSetMemoryBit(unsigned char second);
-    [[nodiscard]] unsigned char testAndResetMemoryBit(unsigned char second);
+    // executions
+    void addWithCarry(unsigned char value);
+    void addWithCarry(bool(Cpu::* address)());
+    void subtractWithCarry(unsigned char value);
+    void subtractWithCarry(bool(Cpu::* address)());
+    void orA(bool(Cpu::* address)());
+    void andA(bool(Cpu::* address)());
+    void xorA(bool(Cpu::* address)());
+    void load(unsigned char& cpuRegister, bool(Cpu::* address)());
+    void store(unsigned char value, bool(Cpu::* address)());
     void bitTest(unsigned char second);
+    void bitTest(bool(Cpu::* address)());
     void compare(unsigned char first, unsigned char second);
-    [[nodiscard]] unsigned char rotateRight(unsigned char before);
-    [[nodiscard]] unsigned char rotateLeft(unsigned char before);
-    [[nodiscard]] unsigned char shiftRight(unsigned char before);
-    [[nodiscard]] unsigned char shiftLeft(unsigned char before);
+    void compare(unsigned char first, bool(Cpu::* address)());
+    void testAndSetMemoryBit(bool(Cpu::* address)());
+    void testAndResetMemoryBit(bool(Cpu::* address)());
+    void rotateRight(bool(Cpu::* address)());
+    void rotateLeft(bool(Cpu::* address)());
+    void shiftRight(bool(Cpu::* address)());
+    void shiftLeft(bool(Cpu::* address)());
+    void increment(bool(Cpu::* address)());
+    void decrement(bool(Cpu::* address)());
+
     void resetMemoryBit(unsigned char bitId);
     void setMemoryBit(unsigned char bitId);
     void branchOnBitReset(unsigned char bitId);
     void branchOnBitSet(unsigned char bitId);
 
+    void branchIf(bool condition);
+
     void push(unsigned char data);  // after push cpu is in write mode
     void pull();    // to dataBuffer
 
-// addressing
-    void zeroPage();                // done in tcu 2 low
-    void zeroPageIndirect();        // done in tcu 4 low
-    void zeroPageWithXIndirect();   // done in tcu 5 low
-    void zeroPageIndirectWithY();   // done in tcu 4 low
-    void zeroPageWithX();           // done in tcu 3 low
-    void zeroPageWithY();           // done in tcu 3 low
-    void absoluteIndirect();        // done in tcu 5 low
-    void absolute();                // done in tcu 3 low
-    void absoluteWithX();           // done in tcu 3 low
-    void absoluteWithY();           // done in tcu 3 low
+    // addressing
+    bool zeroPage();                // done in tcu 2 low
+    bool zeroPageIndirect();        // done in tcu 4 low
+    bool zeroPageWithXIndirect();   // done in tcu 5 low
+    bool zeroPageIndirectWithY();   // done in tcu 4 low
+    bool zeroPageWithX();           // done in tcu 3 low
+    bool zeroPageWithY();           // done in tcu 3 low
+    bool absoluteIndirect();        // done in tcu 5 low
+    bool absolute();                // done in tcu 3 low
+    bool absoluteWithX();           // done in tcu 3 low
+    bool absoluteWithY();           // done in tcu 3 low
 
-// operations
+    // operations
     void breakRequest();                // 0x00
     void orWithZeroPageWithXIndirect(); // 0x01
     void testAndSetMemoryBitZeroPage(); // 0x04
@@ -204,7 +220,7 @@ private:
     void storeXAtZeroPageWithY();       // 0x96
     void setMemoryBit1();               // 0x97
     void transferYToA();                // 0x98
-    void storeAAtabsoluteWithY();       // 0x99
+    void storeAAtAbsoluteWithY();       // 0x99
     void transferXToStackpointer();     // 0x9a
     void store0AtAbsolute();            // 0x9c
     void storeAAtAbsoluteWithX();       // 0x9d
