@@ -7,10 +7,10 @@
 #include <SFML/Graphics.hpp>
 namespace fs = std::filesystem;
 
-Computer::Computer() : cpu{ data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O },
-rom{ addressModifiedRom, data }, ram{ addressModifiedRam, data, ramOutputDisable, RWB },
-via{ RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2 },
-screen{ viaPortB, e, rw, rs } {
+Computer::Computer() : cpu{data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O},
+rom{addressModifiedRom, data}, ram{addressModifiedRam, data, ramOutputDisable, RWB},
+via{RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2},
+screen{viaPortB, e, rw, rs} {
     cpu.reset();
     via.reset();
 }
@@ -31,9 +31,10 @@ void Computer::reprogram(fs::path binary32k) {
 }
 
 void Computer::run() {
-    std::thread render(&Computer::display, std::ref(*this));
-    render.detach();
+    std::jthread render(&Computer::display, std::ref(*this));
+    auto halfCycleStart = std::chrono::high_resolution_clock::now();
     while (alive) {
+        halfCycleStart = std::chrono::high_resolution_clock::now();
         cpu.cycle();
 
         addressModifiedRom = address ^ 0x8000;
@@ -57,14 +58,16 @@ void Computer::run() {
         screen.cycle();
 
         PHI2 = !PHI2;
-        if (PHI2)
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        auto halfCycleEnd = std::chrono::high_resolution_clock::now();
+        while (std::chrono::duration_cast<std::chrono::nanoseconds>(halfCycleEnd - halfCycleStart).count() < 490) {
+            halfCycleEnd = std::chrono::high_resolution_clock::now();
+        }
     }
 }
 
 void Computer::display() {
-    sf::RenderWindow window(sf::VideoMode(sf::Vector2u(384, 216)), "Ben Eater MiniPC Output", sf::State::Windowed);
-    window.setFramerateLimit(144);
+    sf::RenderWindow window(sf::VideoMode(sf::Vector2u(256, 144)), "Ben Eater MiniPC Output", sf::State::Windowed);
+    window.setFramerateLimit(60);
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {

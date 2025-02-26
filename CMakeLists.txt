@@ -21,10 +21,11 @@ else()
 endif()
 
 set(SFML_STATIC_LIBRARIES TRUE)
+
 add_subdirectory(libs/SFML-3.0.0)
 
 enable_testing()
 
 add_subdirectory(src)
 
-#add_subdirectory(tests)
+add_subdirectory(tests)

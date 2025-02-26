@@ -8,9 +8,17 @@ void MiniLCD::cycleCommand() {
     if (RW) {
         if (eightBit) {
             data = addressCounter;
+            if (busyCounter) {
+                --busyCounter;
+                data |= 0x80;
+            }
             return;
         }
         throw std::runtime_error("4 bit mode not implemented");
+        return;
+    }
+    if (busyCounter) {
+        ++busyCounter;
         return;
     }
     if (eightBit) {
@@ -21,6 +29,8 @@ void MiniLCD::cycleCommand() {
             addressCounter = 0;
             curserCell = 0;
             curserLine1 = true;
+            // not in data sheet
+            busyCounter = 1024;
             return;
         case 2:
             cgRam = false;
@@ -28,22 +38,26 @@ void MiniLCD::cycleCommand() {
             curserCell = 0;
             curserLine1 = true;
             shiftPos = 0;
+            busyCounter = 3040;
             return;
         case 3:
             cgRam = false;
             moveRight = data & 0b00000010;
             doShift = data & 0b00000001;
+            busyCounter = 74;
             return;
         case 4:
             cgRam = false;
             screenOn = data & 0b0000100;
             curserOn = data & 0b00000010;
             curserBlink = data & 0b00000001;
+            busyCounter = 74;
             return;
         case 5:
             cgRam = false;
             doShift = data & 0b0001000;
             moveRight = data & 0b00000100;
+            busyCounter = 74;
             return;
         case 6:
             eightBit = data & 0b00010000;
@@ -53,10 +67,12 @@ void MiniLCD::cycleCommand() {
             /*if (data & 0b00000100) {
                 throw std::runtime_error("5by8 only");
             }*/
+            busyCounter = 74;
             return;
         case 7:
             addressCounter = data & 0b00111111;
             cgRam = true;
+            busyCounter = 74;
             return;
         case 8:
             addressCounter = data & 0b01111111;
@@ -69,6 +85,7 @@ void MiniLCD::cycleCommand() {
                 shiftPos = addressCounter - 0x40;
             }
             cgRam = false;
+            busyCounter = 74;
             return;
         default:
             return;
@@ -81,6 +98,11 @@ void MiniLCD::cycleData() {
     if (!eightBit) {
         throw std::runtime_error("4 bit mode not implemented");
     }
+    if (busyCounter) {
+        ++busyCounter;
+        return;
+    }
+    busyCounter = 74;
     if (RW) {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
@@ -166,7 +188,7 @@ void MiniLCD::cycleData() {
 void MiniLCD::updateTexture() {
     int i = 0;
     for (volatile const auto& d : characterGeneratorRam) {
-        std::uint8_t pixel[20] { 0 };
+        std::uint8_t pixel[20]{0};
         if (d & 0b00010000) {
             pixel[3] = 255;
         }
@@ -214,7 +236,7 @@ void MiniLCD::updateDisplay() {
     curser.setFillColor(sf::Color(0, 0, 0, 0));
 }
 
-MiniLCD::MiniLCD(unsigned char& _data, const bool& _E, const bool& _RW, const bool& _RS) : data { _data }, E { _E }, RW { _RW }, RS { _RS } {
+MiniLCD::MiniLCD(unsigned char& _data, const bool& _E, const bool& _RW, const bool& _RS) : data{_data}, E{_E}, RW{_RW}, RS{_RS} {
     texture = sf::Texture("resources/HD44780_5x8Symbols.png");
     background.setSize(sf::Vector2f(256, 42));
     background.setFillColor(sf::Color::Green);
@@ -235,20 +257,22 @@ void MiniLCD::draw(sf::RenderTarget& window) {
     updateDisplay();
     window.draw(background);
     for (auto i = 0; i < 16; ++i) {
-        window.draw(topRow[i + shiftPos]);
-        window.draw(bottomRow[i + shiftPos]);
+        window.draw(topRow[i]);
+        window.draw(bottomRow[i]);
     }
     window.draw(curser);
 }
 
 void MiniLCD::move(sf::Vector2f vec) {
     background.move(vec);
-    std::ranges::for_each(topRow, [&vec] (sf::Sprite& s) {s.move(vec); });
-    std::ranges::for_each(bottomRow, [&vec] (sf::Sprite& s) {s.move(vec); });
+    std::ranges::for_each(topRow, [&vec](sf::Sprite& s) {s.move(vec); });
+    std::ranges::for_each(bottomRow, [&vec](sf::Sprite& s) {s.move(vec); });
     curser.move(vec);
 }
 
 void MiniLCD::cycle() {
+    if (busyCounter)
+        --busyCounter;
     if (!E) {
         done = false;
         return;
