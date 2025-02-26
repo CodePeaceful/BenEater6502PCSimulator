@@ -5,10 +5,12 @@
 
 void Cpu::fetch() noexcept {
     if (interuptDemanded) {
+        TCU = 0;
         handleNonMaskebleInterupt();
         return;
     }
     if (interuptRequested) {
+        TCU = 0;
         handleInteruptRequest();
         return;
     }
@@ -34,11 +36,107 @@ void Cpu::toBus() noexcept {
 }
 
 void Cpu::handleInteruptRequest() noexcept {
-    throw std::runtime_error("interupts not implemented");
+    if (TCU == 0) {
+        return;
+    }
+    if (TCU == 1) {
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            unsigned char pch = programCounter >> 8;
+            push(pch);
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            unsigned char pcl = programCounter & 0xff;
+            push(pcl);
+            return;
+        }
+        VPB = false;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            push(prozessorStatus);
+        }
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            readWriteBuffer = true;
+            addressBuffer = 0xfffe;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        prozessorStatus |= 4;
+        return;
+    }
+    if (TCU == 6) {
+        if (!PHI2) {
+            addressBuffer = 0xffff;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = 0x100 * instructionBufferHigh + instructionBufferLow;
+        VPB = true;
+        return;
+    }
+    fetch();
 }
 
 void Cpu::handleNonMaskebleInterupt() noexcept {
-    throw std::runtime_error("interupts not implemented");
+    if (TCU == 0) {
+        return;
+    }
+    if (TCU == 1) {
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            unsigned char pch = programCounter >> 8;
+            push(pch);
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            unsigned char pcl = programCounter & 0xff;
+            push(pcl);
+            return;
+        }
+        VPB = false;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            push(prozessorStatus);
+        }
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            readWriteBuffer = true;
+            addressBuffer = 0xfffa;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        prozessorStatus |= 4;
+        return;
+    }
+    if (TCU == 6) {
+        if (!PHI2) {
+            addressBuffer = 0xfffb;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = 0x100 * instructionBufferHigh + instructionBufferLow;
+        VPB = true;
+        return;
+    }
+    fetch();
 }
 
 void Cpu::negativeZeroCheck(unsigned char value) noexcept {
@@ -1387,7 +1485,46 @@ void Cpu::branchOnBitReset3() noexcept {
 }
 
 void Cpu::returnFromInterupt() noexcept {
-    throw std::runtime_error("interupt not implemented");
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+            return;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        prozessorStatus = dataBuffer;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
+        return;
+    }
+    fetch();
 }
 
 void Cpu::xorWithZeroPageWithXIndirect() noexcept {
@@ -2483,6 +2620,16 @@ void Cpu::cycle() noexcept {
         ++TCU;
     }
     if (TCU == 0) {
+        toBus();
+        return;
+    }
+    if (followingRequest) {
+        handleInteruptRequest();
+        toBus();
+        return;
+    }
+    if (followingOrder) {
+        handleNonMaskebleInterupt();
         toBus();
         return;
     }

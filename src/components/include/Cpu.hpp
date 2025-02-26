@@ -39,6 +39,8 @@ private:
     bool interuptDemanded{false};
     bool NMIB_Before{true};
     bool inbreak{false};
+    bool followingRequest{false};
+    bool followingOrder{false};
     unsigned char resetTimer;
     unsigned char instructionBufferLow;
     unsigned char instructionBufferHigh;
