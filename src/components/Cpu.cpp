@@ -37,6 +37,7 @@ void Cpu::toBus() noexcept {
 
 void Cpu::handleInteruptRequest() noexcept {
     if (TCU == 0) {
+        followingRequest = true;
         return;
     }
     if (TCU == 1) {
@@ -51,7 +52,7 @@ void Cpu::handleInteruptRequest() noexcept {
     }
     if (TCU == 3) {
         if (!PHI2) {
-            unsigned char pcl = programCounter & 0xff;
+            unsigned char pcl = programCounter % 256;
             push(pcl);
             return;
         }
@@ -85,10 +86,14 @@ void Cpu::handleInteruptRequest() noexcept {
         return;
     }
     fetch();
+    if (PHI2) {
+        followingRequest = false;
+    }
 }
 
 void Cpu::handleNonMaskebleInterupt() noexcept {
     if (TCU == 0) {
+        followingOrder = true;
         return;
     }
     if (TCU == 1) {
@@ -103,7 +108,7 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
     }
     if (TCU == 3) {
         if (!PHI2) {
-            unsigned char pcl = programCounter & 0xff;
+            unsigned char pcl = programCounter % 256;
             push(pcl);
             return;
         }
@@ -137,6 +142,9 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
         return;
     }
     fetch();
+    if (PHI2) {
+        followingOrder = false;
+    }
 }
 
 void Cpu::negativeZeroCheck(unsigned char value) noexcept {
@@ -157,21 +165,21 @@ void Cpu::negativeZeroCheck(unsigned char value) noexcept {
 void Cpu::addWithCarry(unsigned char value) noexcept {
     bool A7 = A & 0b1000'0000;
     bool v7 = value & 0b1000'0000;
-    bool carry = prozessorStatus & 0b1000'0000;
+    bool carry = prozessorStatus & 1;
     A += value;
     if (carry) {
         ++A;
     }
     bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
-    prozessorStatus &= 0b0011'1111;
+    prozessorStatus &= 0b1011'1110;
     // overflow
     if (A7 == v7 && A7 != A7new) {
         prozessorStatus |= 0b0100'0000;
     }
     // carry
     if ((A7 && v7) || ((A7 ^ v7) && !A7new)) {
-        prozessorStatus |= 0b1000'0000;
+        prozessorStatus |= 0b1;
     }
     negativeZeroCheck(A);
 }
@@ -194,23 +202,27 @@ void Cpu::addWithCarry(bool(Cpu::* address)()) noexcept {
 void Cpu::subtractWithCarry(unsigned char value) noexcept {
     bool A7 = A & 0b1000'0000;
     bool v7 = value & 0b1000'0000;
-    bool carry = prozessorStatus & 0b1000'0000;
+    bool carry = prozessorStatus & 1;
 
-    if (carry) {
-        ++A;
-    }
     bool borrow = A < value;
+    if (!carry) {
+        --A;
+        borrow = A < value;
+        if (A == 255) {
+            borrow = true;
+        }
+    }
     A -= value;
     bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
-    prozessorStatus &= 0b0011'1111;
+    prozessorStatus &= 0b1011'1110;
     // overflow
     if (A7 != v7 && A7 != A7new) {
         prozessorStatus |= 0b0100'0000;
     }
     // carry
     if (!borrow) {
-        prozessorStatus |= 0b1000'0000;
+        prozessorStatus |= 1;
     }
     negativeZeroCheck(A);
 }
@@ -509,8 +521,8 @@ void Cpu::rotateLeft(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool rememberCarry = prozessorStatus & 0x80;
-            if (instructionBufferLow & 1) {
+            bool rememberCarry = prozessorStatus & 1;
+            if (instructionBufferLow & 0x80) {
                 prozessorStatus |= 1;
             }
             else {
@@ -552,6 +564,13 @@ void Cpu::shiftRight(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
+            bool carry = instructionBufferLow & 1;
+            if (carry) {
+                prozessorStatus |= 1;
+            }
+            else {
+                prozessorStatus &= 0b1111'1110;
+            }
             instructionBufferLow = instructionBufferLow >> 1;
             negativeZeroCheck(instructionBufferLow);
             return;
@@ -585,6 +604,13 @@ void Cpu::shiftLeft(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
+            bool carry = instructionBufferLow & 0x80;
+            if (carry) {
+                prozessorStatus |= 1;
+            }
+            else {
+                prozessorStatus &= 0b1111'1110;
+            }
             instructionBufferLow = instructionBufferLow << 1;
             negativeZeroCheck(instructionBufferLow);
             return;
@@ -1186,6 +1212,13 @@ void Cpu::orWithImmediate() noexcept {
 void Cpu::shiftLeftA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
+            bool carry = A & 0x80;
+            if (carry) {
+                prozessorStatus |= 1;
+            }
+            else {
+                prozessorStatus &= 0b1111'1110;
+            }
             A = A << 1;
             negativeZeroCheck(A);
         }
@@ -1574,6 +1607,13 @@ void Cpu::xorImediate() noexcept {
 void Cpu::shiftRightA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
+            bool carry = A & 1;
+            if (carry) {
+                prozessorStatus |= 1;
+            }
+            else {
+                prozessorStatus &= 0b1111'1110;
+            }
             A = A >> 1;
             negativeZeroCheck(A);
         }
@@ -1749,6 +1789,7 @@ void Cpu::pullA() noexcept {
             return;
         }
         A = dataBuffer;
+        negativeZeroCheck(A);
         return;
     }
     fetch();
@@ -1895,6 +1936,7 @@ void Cpu::pullY() noexcept {
             return;
         }
         Y = dataBuffer;
+        negativeZeroCheck(Y);
         return;
     }
     fetch();
@@ -2008,6 +2050,7 @@ void Cpu::transferXtoA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             A = X;
+            negativeZeroCheck(A);
         }
         return;
     }
@@ -2063,7 +2106,7 @@ void Cpu::transferYToA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             A = Y;
-            return;
+            negativeZeroCheck(A);
         }
         return;
     }
@@ -2153,6 +2196,7 @@ void Cpu::transferAToY() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             Y = A;
+            negativeZeroCheck(Y);
         }
         return;
     }
@@ -2177,6 +2221,7 @@ void Cpu::transferAToX() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             X = A;
+            negativeZeroCheck(X);
         }
         return;
     }
@@ -2246,6 +2291,7 @@ void Cpu::transferStackpointerToX() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             X = stackPointer;
+            negativeZeroCheck(X);
         }
         return;
     }
@@ -2338,7 +2384,19 @@ void Cpu::decrementX() noexcept {
 
 void Cpu::waitForInterupt() noexcept {
     // Documentation confusing
-    throw std::runtime_error("interupt not implemented");
+    if (!PHI2) {
+        if (interuptDemanded) {
+            TCU = 0;
+            handleNonMaskebleInterupt();
+            return;
+        }
+        if (interuptRequested) {
+            TCU = 0;
+            handleInteruptRequest();
+            return;
+        }
+    }
+    TCU = 1;
 }
 
 void Cpu::compareYWithAbsolute() noexcept {
@@ -2558,6 +2616,7 @@ void Cpu::pullX() noexcept {
             return;
         }
         X = dataBuffer;
+        negativeZeroCheck(X);
         return;
     }
     fetch();
@@ -2619,10 +2678,6 @@ void Cpu::cycle() noexcept {
     if (!PHI2) {
         ++TCU;
     }
-    if (TCU == 0) {
-        toBus();
-        return;
-    }
     if (followingRequest) {
         handleInteruptRequest();
         toBus();
@@ -2630,6 +2685,10 @@ void Cpu::cycle() noexcept {
     }
     if (followingOrder) {
         handleNonMaskebleInterupt();
+        toBus();
+        return;
+    }
+    if (TCU == 0) {
         toBus();
         return;
     }

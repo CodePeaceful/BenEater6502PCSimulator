@@ -1,5 +1,6 @@
 #pragma once
 
+/// Cpu has no decimal mode(ignored flag) or break instruction(terminate)
 class Cpu
 {
 private:
@@ -317,4 +318,7 @@ public:
         bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O)noexcept;
     void cycle()noexcept;
     void reset()noexcept;
+
+    template<typename T>
+    T t();
 };

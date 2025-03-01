@@ -6,6 +6,7 @@
 #include <SFML/Graphics.hpp>
 
 /// busy expects the lcd to be updated twice per cycle of 1MHz
+/// four bit mode or any non screen equivalent mode throws exeption
 class MiniLCD
 {
 private:
