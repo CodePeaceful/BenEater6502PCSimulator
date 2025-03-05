@@ -3,6 +3,7 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
+#include <print>
 
 #include <SFML/Graphics.hpp>
 namespace fs = std::filesystem;
@@ -75,6 +76,7 @@ void Computer::display() {
                 window.close();
             }
         }
+        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
         window.clear(sf::Color(0, 0, 0, 255));
         screen.draw(window);
         window.display();

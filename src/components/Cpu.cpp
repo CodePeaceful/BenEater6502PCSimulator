@@ -73,6 +73,7 @@ void Cpu::handleInteruptRequest() noexcept {
         }
         instructionBufferLow = dataBuffer;
         prozessorStatus |= 4;
+        interuptRequested = false;
         return;
     }
     if (TCU == 6) {
@@ -97,6 +98,7 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
         return;
     }
     if (TCU == 1) {
+        interuptDemanded = false;
         return;
     }
     if (TCU == 2) {
