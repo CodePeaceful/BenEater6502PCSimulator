@@ -3,16 +3,21 @@
 VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B,
     unsigned char& _dataPins, unsigned char& _portA, unsigned char& _portB,
     const bool& _RS0, const bool& _RS1, const bool& _RS2, const bool& _RS3,
-    bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, bool& _IRQB, const bool& _PHI2) :
-    RWB { _RWB }, CS1 { _CS1 }, CS2B { _CS2B }, dataPins { _dataPins }, portA { _portA }, portB { _portB },
-    RS0 { _RS0 }, RS1 { _RS1 }, RS2 { _RS2 }, RS3 { _RS3 }, CA1 { _CA1 }, CA2 { _CA2 }, CB1 { _CB1 }, CB2 { _CB2 },
-    IRQB { _IRQB }, PHI2 { _PHI2 } {}
+    bool& _CA1, bool& _CA2, bool& _CB1, bool& _CB2, bool& _IRQB, const bool& _PHI2, const bool& _RESB) :
+    RWB{_RWB}, CS1{_CS1}, CS2B{_CS2B}, dataPins{_dataPins}, portA{_portA}, portB{_portB},
+    RS0{_RS0}, RS1{_RS1}, RS2{_RS2}, RS3{_RS3}, CA1{_CA1}, CA2{_CA2}, CB1{_CB1}, CB2{_CB2},
+    IRQB{_IRQB}, PHI2{_PHI2}, RESB{_RESB} {}
 
 void VersatileInterfaceAdapter::cycle() {
     if (lastClockState == PHI2) {
         return;
     }
     lastClockState = PHI2;
+
+    if (!RESB && !PHI2) {
+        reset();
+        return;
+    }
 
     if (!CS1 || CS2B)
         return; // not selected

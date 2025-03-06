@@ -4,7 +4,6 @@ add_library(Components STATIC
     MiniLCD.cpp
     VersatileInterfaceAdapter.cpp
     Ram32k.cpp
-    toTest.cpp
 )
 
 target_link_libraries(Components sfml-graphics)

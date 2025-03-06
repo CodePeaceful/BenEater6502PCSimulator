@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <functional>
 
+#include <print>
+
 void Cpu::fetch() noexcept {
     if (interuptDemanded) {
         TCU = 0;
@@ -2637,11 +2639,14 @@ void Cpu::branchOnBitSet7() noexcept {
 }
 
 Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
-    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O) noexcept :
+    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O, const bool& _RESB) noexcept :
     data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB}, NMIB{_NMIB},
-    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O}, PHI2O{_PHI2O} {}
+    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O}, PHI2O{_PHI2O}, RESB{_RESB} {}
 
 void Cpu::cycle() noexcept {
+    if (RESB) {
+        lastRESB = true;
+    }
     if (BE && readWriteBuffer) {
         dataBuffer = data;
     }
@@ -2662,8 +2667,17 @@ void Cpu::cycle() noexcept {
         toBus();
         return;
     }
+    if (!PHI2 && !RESB) {
+        if (!lastRESB) {
+            reset();
+            return;
+        }
+        lastRESB = false;
+    }
     lastClockState = PHI2;
     if (resetTimer) {
+        interuptRequested = false;
+        interuptDemanded = false;
         if (!PHI2) {
             readWriteBuffer = true;
             --resetTimer;
@@ -3340,6 +3354,8 @@ void Cpu::cycle() noexcept {
 }
 
 void Cpu::reset() noexcept {
+    followingRequest = false;
+    followingOrder = false;
     prozessorStatus &= 0b1111'0111;
     prozessorStatus |= 0b0011'0100;
     resetTimer = 7;

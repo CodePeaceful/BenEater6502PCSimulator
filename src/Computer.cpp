@@ -8,9 +8,9 @@
 #include <SFML/Graphics.hpp>
 namespace fs = std::filesystem;
 
-Computer::Computer() : cpu{data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O},
+Computer::Computer() : cpu{data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O, RESB},
 rom{addressModifiedRom, data}, ram{addressModifiedRam, data, ramOutputDisable, RWB},
-via{RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2},
+via{RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2, RESB},
 screen{viaPortB, e, rw, rs} {
     cpu.reset();
     via.reset();
@@ -75,7 +75,19 @@ void Computer::display() {
                 alive = false;
                 window.close();
             }
+            // tab to reset computer
+            if (const auto key = event->getIf<sf::Event::KeyPressed>()) {
+                if (key->code == sf::Keyboard::Key::Tab) {
+                    RESB = false;
+                }
+            }
+            if (const auto key = event->getIf<sf::Event::KeyReleased>()) {
+                if (key->code == sf::Keyboard::Key::Tab) {
+                    RESB = true;
+                }
+            }
         }
+        // left mouse button for interupt
         NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
         window.clear(sf::Color(0, 0, 0, 255));
         screen.draw(window);

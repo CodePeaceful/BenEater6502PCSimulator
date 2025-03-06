@@ -19,6 +19,7 @@ private:
     const bool& PHI2;
     bool& PHI1O;
     bool& PHI2O;
+    const bool& RESB;
 
     // internals
     unsigned short programCounter;
@@ -42,6 +43,7 @@ private:
     bool inbreak{false};
     bool followingRequest{false};
     bool followingOrder{false};
+    bool lastRESB{false};
     unsigned char resetTimer;
     unsigned char instructionBufferLow;
     unsigned char instructionBufferHigh;
@@ -315,10 +317,7 @@ private:
 
 public:
     Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
-        bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O)noexcept;
+        bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O, const bool& _RESB)noexcept;
     void cycle()noexcept;
     void reset()noexcept;
-
-    template<typename T>
-    T t();
 };

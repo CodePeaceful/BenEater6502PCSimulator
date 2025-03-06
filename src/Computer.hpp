@@ -26,6 +26,7 @@ private:
     bool PHI2{true};
     bool PHI2O;
     bool PHI1O;
+    bool RESB{true};
 
     // modified for rom
     unsigned short addressModifiedRom{0};

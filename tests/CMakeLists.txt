@@ -9,12 +9,12 @@ FetchContent_MakeAvailable(googletest)
 add_library(GTest::GTest INTERFACE IMPORTED)
 target_link_libraries(GTest::GTest INTERFACE gtest_main)
 
-add_executable(multiply_test exampletest.cpp)
+add_executable(cpuTest cpuTest.cpp)
 
-target_link_libraries(multiply_test
+target_link_libraries(cpuTest
  PRIVATE
   GTest::GTest
-  Components)
+  Components
+  )
 
-
-add_test(multiply_gtest multiply_test)
+add_test(cpu_gtest cpuTest)
