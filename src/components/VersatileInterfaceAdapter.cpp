@@ -9,6 +9,12 @@ VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const boo
     IRQB{_IRQB}, PHI2{_PHI2}, RESB{_RESB} {}
 
 void VersatileInterfaceAdapter::cycle() {
+    // TODO: external interupts over interupting pins
+    CA1before = CA1;
+    CA2before = CA2;
+    CB1before = CB1;
+    CB2before = CB2;
+
     if (lastClockState == PHI2) {
         return;
     }
@@ -21,6 +27,8 @@ void VersatileInterfaceAdapter::cycle() {
 
     if (!CS1 || CS2B)
         return; // not selected
+
+    //TODO: timer?
 
 
     if (RS0) {
@@ -42,16 +50,24 @@ void VersatileInterfaceAdapter::cycle() {
             }
             // Data Direction A
             if (RWB) {
-                dataPins = portADataDirection;
+                if (!PHI2)
+                    dataPins = portADataDirection;
                 return;
             }
-            portADataDirection = dataPins;
+            if (PHI2)
+                portADataDirection = dataPins;
             return;
         }
         if (RS2) {
             if (RS3) {
                 // Interrupt Flag Register
-                // TODO: 
+                if (RWB) {
+                    if (!PHI2)
+                        dataPins = interuptFlagRegister;
+                    return;
+                }
+                if (PHI2)
+                    interuptFlagRegister = dataPins;
                 return;
             }
             // T1 High-Order Counter
@@ -83,17 +99,16 @@ void VersatileInterfaceAdapter::cycle() {
             }
             return;
         }
-        if (!PHI2) {
+        if (PHI2) {
             portARegister = dataPins;
-            return;
-        }
-        for (unsigned char i = 1; i != 0; i = i << 1) {
-            if (i & portADataDirection) {
-                if (i & portARegister) {
-                    portA |= i;
-                }
-                else {
-                    portA &= ~i;
+            for (unsigned char i = 1; i != 0; i = i << 1) {
+                if (i & portADataDirection) {
+                    if (i & portARegister) {
+                        portA |= i;
+                    }
+                    else {
+                        portA &= ~i;
+                    }
                 }
             }
         }
@@ -103,11 +118,17 @@ void VersatileInterfaceAdapter::cycle() {
         if (RS2) {
             if (RS3) {
                 // Interrupt Enable Register
-                // TODO: 
+                if (RWB) {
+                    if (!PHI2)
+                        dataPins = interuptEnableRegister;
+                    return;
+                }
+                if (PHI2)
+                    interuptEnableRegister = dataPins;
                 return;
             }
             // T1 Low-Order Latches
-            // TODO: 
+            // TODO:
             return;
         }
         if (RS3) {
@@ -126,7 +147,13 @@ void VersatileInterfaceAdapter::cycle() {
     if (RS2) {
         if (RS3) {
             // Peripheral Control Register
-            // TODO: 
+            if (RWB) {
+                if (!PHI2)
+                    dataPins = peripheralControlRegister;
+                return;
+            }
+            if (PHI2)
+                peripheralControlRegister = dataPins;
             return;
         }
         // T1 Low - Order Latches T1 Low - Order Counter
@@ -158,17 +185,16 @@ void VersatileInterfaceAdapter::cycle() {
         }
         return;
     }
-    if (!PHI2) {
+    if (PHI2) {
         portBRegister = dataPins;
-        return;
-    }
-    for (unsigned char i = 1; i != 0; i = i << 1) {
-        if (i & portBDataDirection) {
-            if (i & portBRegister) {
-                portB |= i;
-            }
-            else {
-                portB &= ~i;
+        for (unsigned char i = 1; i != 0; i = i << 1) {
+            if (i & portBDataDirection) {
+                if (i & portBRegister) {
+                    portB |= i;
+                }
+                else {
+                    portB &= ~i;
+                }
             }
         }
     }
@@ -178,4 +204,11 @@ void VersatileInterfaceAdapter::cycle() {
 void VersatileInterfaceAdapter::reset() {
     portADataDirection = 0;
     portBDataDirection = 0;
+    peripheralControlRegister = 0;
+    interuptEnableRegister = 0;
+    interuptFlagRegister = 0;
+    CA1before = CA1;
+    CA2before = CA2;
+    CB1before = CB1;
+    CB2before = CB2;
 }

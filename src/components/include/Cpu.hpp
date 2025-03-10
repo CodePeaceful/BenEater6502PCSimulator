@@ -1,6 +1,6 @@
 #pragma once
 
-/// Cpu has no decimal mode(ignored flag) or break instruction(terminate)
+/// Cpu has no decimal mode(ignored flag) or break instruction(terminate) rdy is not pulled low on wait or stop
 class Cpu
 {
 private:

@@ -14,11 +14,11 @@ private:
     const bool& RS1; // register select
     const bool& RS2; // register select
     const bool& RS3; // register select
-    bool& CA1; //??
-    bool& CA2; //??
-    bool& CB1; //??
-    bool& CB2; //??
-    bool& IRQB; // interupt?
+    const bool& CA1; // interupting IO
+    const bool& CA2; // interupting IO
+    const bool& CB1; // interupting IO
+    const bool& CB2; // interupting IO
+    bool& IRQB; // interupt out for Cpu
     const bool& PHI2;
     const bool& RESB;
 
@@ -27,6 +27,15 @@ private:
     unsigned char portBDataDirection; // PB7 - PB0
     unsigned char portARegister; // PA7 - PA0
     unsigned char portBRegister; // PB7 - PB0
+    unsigned char peripheralControlRegister;
+    unsigned char interuptFlagRegister; // IRQ Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
+    unsigned char interuptEnableRegister; // SetClear Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
+
+    // edge detectors
+    bool CA1before;
+    bool CA2before;
+    bool CB1before;
+    bool CB2before;
 
     // helpers
     bool lastClockState{true};

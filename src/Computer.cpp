@@ -88,7 +88,9 @@ void Computer::display() {
             }
         }
         // left mouse button for interupt
-        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+            NMIB = !NMIB;
+        }
         window.clear(sf::Color(0, 0, 0, 255));
         screen.draw(window);
         window.display();
