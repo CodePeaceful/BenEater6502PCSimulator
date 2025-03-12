@@ -14,10 +14,10 @@ private:
     const bool& RS1; // register select
     const bool& RS2; // register select
     const bool& RS3; // register select
-    const bool& CA1; // interupting IO
-    const bool& CA2; // interupting IO
-    const bool& CB1; // interupting IO
-    const bool& CB2; // interupting IO
+    bool& CA1; // interupting IO
+    bool& CA2; // interupting IO
+    bool& CB1; // interupting IO
+    bool& CB2; // interupting IO
     bool& IRQB; // interupt out for Cpu
     const bool& PHI2;
     const bool& RESB;
@@ -39,6 +39,8 @@ private:
 
     // helpers
     bool lastClockState{true};
+
+    void registerOperation()noexcept;
 
 public:
     VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B, unsigned char& _dataPins,
