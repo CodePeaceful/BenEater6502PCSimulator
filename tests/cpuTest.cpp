@@ -150,6 +150,66 @@ TEST(subtractWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_
     }
 }
 
+TEST(compare, compare) {
+    std::vector<std::tuple<unsigned char, unsigned char, unsigned char, unsigned char>> cases{
+        {0x50, 0b00110100, 0x60, 0b00110100},
+        {0x50, 0b00110100, 0xa0, 0b00110100},
+        {0x50, 0b00110100, 0xe0, 0b00110100},
+        {0x50, 0b00110100, 0x20, 0b00110101},
+        {0xd0, 0b00110100, 0xe0, 0b10110100},
+        {0xd0, 0b00110100, 0x20, 0b10110101},
+        {0xd0, 0b00110100, 0x60, 0b10110101},
+        {0xd0, 0b00110100, 0xa0, 0b10110101},
+        {0x50, 0b00110101, 0x60, 0b00110100},
+        {0x50, 0b00110101, 0xa0, 0b00110100},
+        {0x50, 0b00110101, 0xe0, 0b00110100},
+        {0x50, 0b00110101, 0x20, 0b00110101},
+        {0xd0, 0b00110101, 0xe0, 0b10110100},
+        {0xd0, 0b00110101, 0x20, 0b10110101},
+        {0xd0, 0b00110101, 0x60, 0b10110101},
+        {0xd0, 0b00110101, 0xa0, 0b10110101},
+        {0x50, 0b00110110, 0x60, 0b00110100},
+        {0x50, 0b00110110, 0xa0, 0b00110100},
+        {0x50, 0b00110110, 0xe0, 0b00110100},
+        {0x50, 0b00110110, 0x20, 0b00110101},
+        {0xd0, 0b00110110, 0xe0, 0b10110100},
+        {0xd0, 0b00110110, 0x20, 0b10110101},
+        {0xd0, 0b00110110, 0x60, 0b10110101},
+        {0xd0, 0b00110110, 0xa0, 0b10110101},
+        {0x50, 0b00110111, 0x60, 0b00110100},
+        {0x50, 0b00110111, 0xa0, 0b00110100},
+        {0x50, 0b00110111, 0xe0, 0b00110100},
+        {0x50, 0b00110111, 0x20, 0b00110101},
+        {0xd0, 0b00110111, 0xe0, 0b10110100},
+        {0xd0, 0b00110111, 0x20, 0b10110101},
+        {0xd0, 0b00110111, 0x60, 0b10110101},
+        {0xd0, 0b00110111, 0xa0, 0b10110101},
+        {0x60, 0b00110100, 0x60, 0b00110111},
+        {0xa0, 0b00110100, 0xa0, 0b00110111}
+    };
+    unsigned char data{0xEA};
+    unsigned short address{0};
+    bool VPB{true}; // Vector Pull
+    bool RDY{true}; // ready: run on high
+    bool IRQB{true}; // interrupt: on low
+    bool MLB{true}; // memory lock
+    bool NMIB{true}; // non maskable interrupt: on low
+    bool SYNC{true}; //??
+    bool RWB{true}; // read or write: high = read, low = write
+    bool BE{true}; // bus enable
+    bool SOB{true};
+    bool PHI2{true};
+    bool PHI2O;
+    bool PHI1O;
+    bool RESB{true};
+    Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI2O, PHI1O, RESB);
+    for (const auto& [inA, inFlags, inValue, outFlags] : cases) {
+        cpu.processorStatus = inFlags;
+        cpu.compare(inA, inValue);
+        ASSERT_EQ(outFlags, cpu.processorStatus);
+    }
+}
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

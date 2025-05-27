@@ -6,4 +6,4 @@ add_executable(PcSimulation
     Computer.cpp
 )
 
-target_link_libraries(PcSimulation Assembler Components)
+target_link_libraries(PcSimulation Components)

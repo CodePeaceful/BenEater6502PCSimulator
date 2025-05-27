@@ -47,14 +47,14 @@ void Cpu::handleInterruptRequest() noexcept {
     }
     if (TCU == 2) {
         if (!PHI2) {
-            unsigned char pch = programCounter >> 8;
+            const unsigned char pch = programCounter >> 8;
             push(pch);
         }
         return;
     }
     if (TCU == 3) {
         if (!PHI2) {
-            unsigned char pcl = programCounter % 256;
+            const unsigned char pcl = programCounter % 256;
             push(pcl);
             return;
         }
@@ -167,14 +167,14 @@ void Cpu::negativeZeroCheck(unsigned char value) noexcept {
 }
 
 void Cpu::addWithCarry(unsigned char value) noexcept {
-    bool A7 = A & 0b1000'0000;
-    bool v7 = value & 0b1000'0000;
-    bool carry = processorStatus & 1;
+    const bool A7 = A & 0b1000'0000;
+    const bool v7 = value & 0b1000'0000;
+    const bool carry = processorStatus & 1;
     A += value;
     if (carry) {
         ++A;
     }
-    bool A7new = A & 0b1000'0000;
+    const bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
     processorStatus &= 0b1011'1110;
     // overflow
@@ -203,10 +203,10 @@ void Cpu::addWithCarry(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::subtractWithCarry(unsigned char value) noexcept {
-    bool A7 = A & 0b1000'0000;
-    bool v7 = value & 0b1000'0000;
-    bool carry = processorStatus & 1;
+void Cpu::subtractWithCarry(const unsigned char value) noexcept {
+    const bool A7 = A & 0b1000'0000;
+    const bool v7 = value & 0b1000'0000;
+    const bool carry = processorStatus & 1;
 
     bool borrow = A < value;
     if (!carry) {
@@ -217,7 +217,7 @@ void Cpu::subtractWithCarry(unsigned char value) noexcept {
         }
     }
     A -= value;
-    bool A7new = A & 0b1000'0000;
+    const bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
     processorStatus &= 0b1011'1110;
     // overflow
@@ -304,13 +304,13 @@ void Cpu::load(unsigned char& cpuRegister, bool(Cpu::* address)()) noexcept {
         }
         ++writeBackCounter;
         cpuRegister = dataBuffer;
-        negativeZeroCheck(dataBuffer);
+        negativeZeroCheck(cpuRegister);
         return;
     }
     fetch();
 }
 
-void Cpu::store(unsigned char value, bool(Cpu::* address)()) noexcept {
+void Cpu::store(const unsigned char value, bool(Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -326,7 +326,7 @@ void Cpu::store(unsigned char value, bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::bitTest(unsigned char second) noexcept {
+void Cpu::bitTest(const unsigned char second) noexcept {
     if (A & second) {
         processorStatus &= 0b1111'1101;
     }
@@ -362,22 +362,28 @@ void Cpu::bitTest(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::compare(unsigned char first, unsigned char second) noexcept {
-    if (first > second) {
-        processorStatus |= 0b1000'0000;
-        processorStatus &= 0b1011'1110;
-    }
-    else if (first == second) {
-        processorStatus |= 0b1100'0000;
-        processorStatus &= 0b1111'1110;
+void Cpu::compare(const unsigned char first, const unsigned char second) noexcept {
+    if (first >= second) {
+        processorStatus |= 1; // set carry
     }
     else {
-        processorStatus |= 0b0000'0001;
-        processorStatus &= 0b0011'1111;
+        processorStatus &= 0b1111'1110; // clear carry
+    }
+    if (first == second) {
+        processorStatus |= 2; // set zero
+    }
+    else {
+        processorStatus &= 0b1111'1101; // clear zero
+    }
+    if (first & 0x80 && first != second) {
+        processorStatus |= 0b1000'0000; // set negative
+    }
+    else {
+        processorStatus &= 0b0111'1111; // clear negative
     }
 }
 
-void Cpu::compare(unsigned char first, bool(Cpu::* address)()) noexcept {
+void Cpu::compare(const unsigned char first, bool(Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -482,7 +488,7 @@ void Cpu::rotateRight(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool rememberCarry = processorStatus & 1;
+            const bool rememberCarry = processorStatus & 1;
             if (instructionBufferLow & 1) {
                 processorStatus |= 1;
             }
@@ -525,7 +531,7 @@ void Cpu::rotateLeft(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool rememberCarry = processorStatus & 1;
+            const bool rememberCarry = processorStatus & 1;
             if (instructionBufferLow & 0x80) {
                 processorStatus |= 1;
             }
@@ -698,7 +704,7 @@ void Cpu::decrement(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::resetMemoryBit(unsigned char bitId) noexcept {
+void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
     if (TCU >= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -722,7 +728,7 @@ void Cpu::resetMemoryBit(unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::setMemoryBit(unsigned char bitId) noexcept {
+void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
     if (TCU >= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -731,7 +737,7 @@ void Cpu::setMemoryBit(unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 3) {
-        unsigned char thisBit = 1 << bitId;
+        const unsigned char thisBit = 1 << bitId;
         instructionBufferLow |= thisBit;
         return;
     }
@@ -745,7 +751,7 @@ void Cpu::setMemoryBit(unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::branchOnBitReset(unsigned char bitId) noexcept {
+void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
     if (TCU <= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -778,7 +784,7 @@ void Cpu::branchOnBitReset(unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::branchOnBitSet(unsigned char bitId) noexcept {
+void Cpu::branchOnBitSet(const unsigned char bitId) noexcept {
     if (TCU <= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -799,8 +805,7 @@ void Cpu::branchOnBitSet(unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 5) {
-        unsigned char thisBit = 1 << bitId;
-        if (thisBit & instructionBufferHigh) {
+        if (const unsigned char thisBit = 1 << bitId; thisBit & instructionBufferHigh) {
             if (!PHI2) {
                 programCounter += instructionBufferLow;
             }
@@ -810,7 +815,7 @@ void Cpu::branchOnBitSet(unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::branchIf(bool condition) noexcept {
+void Cpu::branchIf(const bool condition) noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -834,7 +839,7 @@ void Cpu::branchIf(bool condition) noexcept {
     fetch();
 }
 
-void Cpu::push(unsigned char data) noexcept {
+void Cpu::push(const unsigned char data) noexcept {
     addressBuffer = 0x100 + stackPointer;
     readWriteBuffer = false;
     dataBuffer = data;
@@ -1166,7 +1171,7 @@ void Cpu::orWithZeroPageWithXIndirect() noexcept {
 }
 
 void Cpu::testAndSetMemoryBitZeroPage() noexcept {
-    testAndResetMemoryBit(&Cpu::zeroPage);
+    testAndSetMemoryBit(&Cpu::zeroPage);
 }
 
 void Cpu::orWithZeroPage() noexcept {
@@ -1448,7 +1453,7 @@ void Cpu::branchOnBitReset2() noexcept {
 }
 
 void Cpu::branchIfResultMinus() noexcept {
-    bool negative = processorStatus & 0x80;
+    const bool negative = processorStatus & 0x80;
     branchIf(negative);
 }
 
@@ -1656,7 +1661,7 @@ void Cpu::branchOnBitReset4() noexcept {
 }
 
 void Cpu::branchIfOverflowClear() noexcept {
-    bool overflow = processorStatus & 0x40;
+    const bool overflow = processorStatus & 0x40;
     branchIf(!overflow);
 }
 
@@ -1810,7 +1815,7 @@ void Cpu::addWithImmediate() noexcept {
 void Cpu::rotateRightA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            bool rememberCarry = processorStatus & 1;
+            const bool rememberCarry = processorStatus & 1;
             if (A & 1) {
                 processorStatus |= 1;
             }
@@ -2150,7 +2155,7 @@ void Cpu::loadYImmediate() noexcept {
             return;
         }
         Y = dataBuffer;
-        negativeZeroCheck(X);
+        negativeZeroCheck(Y);
         ++programCounter;
         return;
     }
@@ -2415,7 +2420,7 @@ void Cpu::branchOnBitSet4() noexcept {
 }
 
 void Cpu::branchNotEqual() noexcept {
-    bool equal = processorStatus & 2; // zero flag
+    const bool equal = processorStatus & 2; // zero flag
     branchIf(!equal);
 }
 
