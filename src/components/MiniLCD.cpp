@@ -213,22 +213,22 @@ void MiniLCD::updateDisplay() {
     updateTexture();
     for (auto i = 0ull; i < topRow.size(); ++i) {
         unsigned char topInt = displayDataRam[(shiftPos + i) % 40];
-        unsigned char topIntLitte = topInt & 0b00001111;
+        unsigned char topIntLittle = topInt & 0b00001111;
         unsigned char topIntBig = (topInt >> 4) & 0b00001111;
         unsigned char bottomInt = displayDataRam[(shiftPos + i) % 40 + 40];
-        unsigned char bottomIntLitte = bottomInt & 0b00001111;
+        unsigned char bottomIntLittle = bottomInt & 0b00001111;
         unsigned char bottomIntBig = (bottomInt >> 4) & 0b00001111;
-        sf::Vector2i topChar(topIntBig * 8, topIntLitte * 8);
-        sf::Vector2i bottomChar(bottomIntBig * 8, bottomIntLitte * 8);
+        sf::Vector2i topChar(topIntBig * 8, topIntLittle * 8);
+        sf::Vector2i bottomChar(bottomIntBig * 8, bottomIntLittle * 8);
         topRow[i].setTextureRect(sf::IntRect(topChar, sf::Vector2i(8, 8)));
         bottomRow[i].setTextureRect(sf::IntRect(bottomChar, sf::Vector2i(8, 8)));
     }
     if (curserOn) {
         if (!curserBlink || std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 2 == 0) {
             curser.setFillColor(sf::Color(0, 0, 0, 255));
-            float posx = background.getPosition().x + 6 + curserCell * 16;
-            float posy = background.getPosition().y + 18 + (curserLine1 ? 0 : 20);
-            sf::Vector2f posVec(posx, posy);
+            float posX = background.getPosition().x + 6 + curserCell * 16;
+            float posY = background.getPosition().y + 18 + (curserLine1 ? 0 : 20);
+            sf::Vector2f posVec(posX, posY);
             curser.setPosition(posVec);
             return;
         }

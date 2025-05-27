@@ -16,10 +16,10 @@ screen{viaPortB, e, rw, rs} {
     via.reset();
 }
 
-void Computer::reprogram(fs::path binary32k) {
-    std::array<unsigned char, 0x8000> binary;
+void Computer::reprogram(const fs::path& binary32k) {
+    std::array<unsigned char, 0x8000> binary{};
     std::ifstream input(binary32k, std::ios::binary);
-    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input), {});
+    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input), { });
     if (binary.size() != buffer.size()) {
         throw std::runtime_error("binary size wrong");
     }
@@ -33,9 +33,8 @@ void Computer::reprogram(fs::path binary32k) {
 
 void Computer::run() {
     std::jthread render(&Computer::display, std::ref(*this));
-    auto halfCycleStart = std::chrono::high_resolution_clock::now();
     while (alive) {
-        halfCycleStart = std::chrono::high_resolution_clock::now();
+        auto halfCycleStart = std::chrono::high_resolution_clock::now();
         cpu.cycle();
 
         addressModifiedRom = address ^ 0x8000;
@@ -46,7 +45,7 @@ void Computer::run() {
         ram.cycle();
 
         viaCS1 = address & 0x2000;
-        viaCS2B = !(!((bool)(address & 0x8000)) && (0x4000 & address));
+        viaCS2B = !(!static_cast<bool>(address & 0x8000) && (0x4000 & address));
         RS0 = address & 0x0001;
         RS1 = address & 0x0002;
         RS2 = address & 0x0004;
@@ -87,10 +86,9 @@ void Computer::display() {
                 }
             }
         }
-        // left mouse button for interupt
-        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
-            NMIB = !NMIB;
-        }
+        // left mouse button for interrupt
+        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+
         window.clear(sf::Color(0, 0, 0, 255));
         screen.draw(window);
         window.display();

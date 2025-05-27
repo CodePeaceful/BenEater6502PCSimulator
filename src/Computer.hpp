@@ -8,7 +8,7 @@
 #include <Ram32k.hpp>
 #include <MiniLCD.hpp>
 
-class Computer
+class Computer final
 {
 private:
     // CPU Connections
@@ -16,9 +16,9 @@ private:
     unsigned short address{0};
     bool VPB{true}; // Vector Pull
     bool RDY{true}; // ready: run on high
-    bool IRQB{true}; // interupt: on low
+    bool IRQB{true}; // interrupt: on low
     bool MLB{true}; // memory lock
-    bool NMIB{true}; // non maskable interupt: on low
+    bool NMIB{true}; // non maskable interrupt: on low
     bool SYNC{true}; //??
     bool RWB{true}; // read or write: high = read, low = write
     bool BE{true}; // bus enable
@@ -35,7 +35,7 @@ private:
     unsigned short addressModifiedRam{0};
     bool ramOutputDisable;
 
-    // modified Cpu pins for versitale interface adapter
+    // modified Cpu pins for versatile interface adapter
     bool RS0; // register select
     bool RS1; // register select
     bool RS2; // register select
@@ -43,7 +43,7 @@ private:
     bool viaCS1;
     bool viaCS2B;
 
-    // External pins of versitale interface adapter
+    // External pins of versatile interface adapter
     unsigned char viaPortA{0};
     unsigned char viaPortB{0};
     bool CA1; //??
@@ -66,7 +66,7 @@ private:
 
 public:
     Computer();
-    void reprogram(std::filesystem::path binary32k);
+    void reprogram(const std::filesystem::path& binary32k);
     void run();
 
 private:

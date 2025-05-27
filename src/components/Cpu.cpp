@@ -6,14 +6,14 @@
 #include <print>
 
 void Cpu::fetch() noexcept {
-    if (interuptDemanded) {
+    if (interruptDemanded) {
         TCU = 0;
-        handleNonMaskebleInterupt();
+        handleNonMaskableInterrupt();
         return;
     }
-    if (interuptRequested) {
+    if (interruptRequested) {
         TCU = 0;
-        handleInteruptRequest();
+        handleInterruptRequest();
         return;
     }
     if (!PHI2) {
@@ -27,7 +27,7 @@ void Cpu::fetch() noexcept {
     ++programCounter;
 }
 
-void Cpu::toBus() noexcept {
+void Cpu::toBus() const noexcept {
     if (BE) {
         address = addressBuffer;
         RWB = readWriteBuffer;
@@ -37,7 +37,7 @@ void Cpu::toBus() noexcept {
     }
 }
 
-void Cpu::handleInteruptRequest() noexcept {
+void Cpu::handleInterruptRequest() noexcept {
     if (TCU == 0) {
         followingRequest = true;
         return;
@@ -63,7 +63,7 @@ void Cpu::handleInteruptRequest() noexcept {
     }
     if (TCU == 4) {
         if (!PHI2) {
-            push(prozessorStatus);
+            push(processorStatus);
         }
         return;
     }
@@ -74,8 +74,8 @@ void Cpu::handleInteruptRequest() noexcept {
             return;
         }
         instructionBufferLow = dataBuffer;
-        prozessorStatus |= 4;
-        interuptRequested = false;
+        processorStatus |= 4;
+        interruptRequested = false;
         return;
     }
     if (TCU == 6) {
@@ -94,13 +94,13 @@ void Cpu::handleInteruptRequest() noexcept {
     }
 }
 
-void Cpu::handleNonMaskebleInterupt() noexcept {
+void Cpu::handleNonMaskableInterrupt() noexcept {
     if (TCU == 0) {
         followingOrder = true;
         return;
     }
     if (TCU == 1) {
-        interuptDemanded = false;
+        interruptDemanded = false;
         return;
     }
     if (TCU == 2) {
@@ -121,7 +121,7 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
     }
     if (TCU == 4) {
         if (!PHI2) {
-            push(prozessorStatus);
+            push(processorStatus);
         }
         return;
     }
@@ -132,7 +132,7 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
             return;
         }
         instructionBufferLow = dataBuffer;
-        prozessorStatus |= 4;
+        processorStatus |= 4;
         return;
     }
     if (TCU == 6) {
@@ -153,37 +153,37 @@ void Cpu::handleNonMaskebleInterupt() noexcept {
 
 void Cpu::negativeZeroCheck(unsigned char value) noexcept {
     if (value == 0) {
-        prozessorStatus |= 0b0000'0010;
+        processorStatus |= 0b0000'0010;
     }
     else {
-        prozessorStatus &= 0b1111'1101;
+        processorStatus &= 0b1111'1101;
     }
     if (value & 0x80) {
-        prozessorStatus |= 0b1000'0000;
+        processorStatus |= 0b1000'0000;
     }
     else {
-        prozessorStatus &= 0b0111'1111;
+        processorStatus &= 0b0111'1111;
     }
 }
 
 void Cpu::addWithCarry(unsigned char value) noexcept {
     bool A7 = A & 0b1000'0000;
     bool v7 = value & 0b1000'0000;
-    bool carry = prozessorStatus & 1;
+    bool carry = processorStatus & 1;
     A += value;
     if (carry) {
         ++A;
     }
     bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
-    prozessorStatus &= 0b1011'1110;
+    processorStatus &= 0b1011'1110;
     // overflow
     if (A7 == v7 && A7 != A7new) {
-        prozessorStatus |= 0b0100'0000;
+        processorStatus |= 0b0100'0000;
     }
     // carry
     if ((A7 && v7) || ((A7 ^ v7) && !A7new)) {
-        prozessorStatus |= 0b1;
+        processorStatus |= 0b1;
     }
     negativeZeroCheck(A);
 }
@@ -206,7 +206,7 @@ void Cpu::addWithCarry(bool(Cpu::* address)()) noexcept {
 void Cpu::subtractWithCarry(unsigned char value) noexcept {
     bool A7 = A & 0b1000'0000;
     bool v7 = value & 0b1000'0000;
-    bool carry = prozessorStatus & 1;
+    bool carry = processorStatus & 1;
 
     bool borrow = A < value;
     if (!carry) {
@@ -219,14 +219,14 @@ void Cpu::subtractWithCarry(unsigned char value) noexcept {
     A -= value;
     bool A7new = A & 0b1000'0000;
     // clear Overflow and carry
-    prozessorStatus &= 0b1011'1110;
+    processorStatus &= 0b1011'1110;
     // overflow
     if (A7 != v7 && A7 != A7new) {
-        prozessorStatus |= 0b0100'0000;
+        processorStatus |= 0b0100'0000;
     }
     // carry
     if (!borrow) {
-        prozessorStatus |= 1;
+        processorStatus |= 1;
     }
     negativeZeroCheck(A);
 }
@@ -328,22 +328,22 @@ void Cpu::store(unsigned char value, bool(Cpu::* address)()) noexcept {
 
 void Cpu::bitTest(unsigned char second) noexcept {
     if (A & second) {
-        prozessorStatus &= 0b1111'1101;
+        processorStatus &= 0b1111'1101;
     }
     else {
-        prozessorStatus |= 2;
+        processorStatus |= 2;
     }
     if (second & 0b1000'0000) {
-        prozessorStatus |= 0b1000'0000;
+        processorStatus |= 0b1000'0000;
     }
     else {
-        prozessorStatus &= 0b0111'1111;
+        processorStatus &= 0b0111'1111;
     }
     if (second & 0b0100'0000) {
-        prozessorStatus |= 0b0100'0000;
+        processorStatus |= 0b0100'0000;
     }
     else {
-        prozessorStatus &= 0b1011'1111;
+        processorStatus &= 0b1011'1111;
     }
 }
 
@@ -364,16 +364,16 @@ void Cpu::bitTest(bool(Cpu::* address)()) noexcept {
 
 void Cpu::compare(unsigned char first, unsigned char second) noexcept {
     if (first > second) {
-        prozessorStatus |= 0b1000'0000;
-        prozessorStatus &= 0b1011'1110;
+        processorStatus |= 0b1000'0000;
+        processorStatus &= 0b1011'1110;
     }
     else if (first == second) {
-        prozessorStatus |= 0b1100'0000;
-        prozessorStatus &= 0b1111'1110;
+        processorStatus |= 0b1100'0000;
+        processorStatus &= 0b1111'1110;
     }
     else {
-        prozessorStatus |= 0b0000'0001;
-        prozessorStatus &= 0b0011'1111;
+        processorStatus |= 0b0000'0001;
+        processorStatus &= 0b0011'1111;
     }
 }
 
@@ -407,10 +407,10 @@ void Cpu::testAndSetMemoryBit(bool(Cpu::* address)()) noexcept {
     if (writeBackCounter == 1) {
         if (!PHI2) {
             if ((A & instructionBufferLow) == 0) {
-                prozessorStatus |= 2;
+                processorStatus |= 2;
             }
             else {
-                prozessorStatus &= 0b1111'1101;
+                processorStatus &= 0b1111'1101;
             }
             instructionBufferLow |= A;
             return;
@@ -445,10 +445,10 @@ void Cpu::testAndResetMemoryBit(bool(Cpu::* address)()) noexcept {
     if (writeBackCounter == 1) {
         if (!PHI2) {
             if ((A & instructionBufferLow) == 0) {
-                prozessorStatus |= 2;
+                processorStatus |= 2;
             }
             else {
-                prozessorStatus &= 0b1111'1101;
+                processorStatus &= 0b1111'1101;
             }
             instructionBufferLow &= ~A;
             return;
@@ -482,12 +482,12 @@ void Cpu::rotateRight(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool rememberCarry = prozessorStatus & 1;
+            bool rememberCarry = processorStatus & 1;
             if (instructionBufferLow & 1) {
-                prozessorStatus |= 1;
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             instructionBufferLow = instructionBufferLow >> 1;
             if (rememberCarry) {
@@ -525,12 +525,12 @@ void Cpu::rotateLeft(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool rememberCarry = prozessorStatus & 1;
+            bool rememberCarry = processorStatus & 1;
             if (instructionBufferLow & 0x80) {
-                prozessorStatus |= 1;
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             instructionBufferLow = instructionBufferLow << 1;
             if (rememberCarry) {
@@ -568,12 +568,11 @@ void Cpu::shiftRight(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool carry = instructionBufferLow & 1;
-            if (carry) {
-                prozessorStatus |= 1;
+            if ([[maybe_unused]] bool carry = instructionBufferLow & 1) {
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             instructionBufferLow = instructionBufferLow >> 1;
             negativeZeroCheck(instructionBufferLow);
@@ -608,12 +607,11 @@ void Cpu::shiftLeft(bool(Cpu::* address)()) noexcept {
     }
     if (writeBackCounter == 1) {
         if (!PHI2) {
-            bool carry = instructionBufferLow & 0x80;
-            if (carry) {
-                prozessorStatus |= 1;
+            if ([[maybe_unused]] bool carry = instructionBufferLow & 0x80) {
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             instructionBufferLow = instructionBufferLow << 1;
             negativeZeroCheck(instructionBufferLow);
@@ -802,8 +800,7 @@ void Cpu::branchOnBitSet(unsigned char bitId) noexcept {
     }
     if (TCU == 5) {
         unsigned char thisBit = 1 << bitId;
-        bool condition = thisBit & instructionBufferHigh;
-        if (condition) {
+        if (thisBit & instructionBufferHigh) {
             if (!PHI2) {
                 programCounter += instructionBufferLow;
             }
@@ -1185,14 +1182,14 @@ void Cpu::resetMemoryBit0() noexcept {
     resetMemoryBit(0);
 }
 
-void Cpu::pushProzessorStatus() noexcept {
+void Cpu::pushProcessorStatus() noexcept {
     if (TCU == 1) {
         addressBuffer = 0x100 + stackPointer;
         return;
     }
     if (TCU == 2) {
         if (!PHI2) {
-            push(prozessorStatus);
+            push(processorStatus);
         }
         return;
     }
@@ -1216,12 +1213,11 @@ void Cpu::orWithImmediate() noexcept {
 void Cpu::shiftLeftA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            bool carry = A & 0x80;
-            if (carry) {
-                prozessorStatus |= 1;
+            if ([[maybe_unused]] bool carry = A & 0x80) {
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             A = A << 1;
             negativeZeroCheck(A);
@@ -1248,7 +1244,7 @@ void Cpu::branchOnBitReset0() noexcept {
 }
 
 void Cpu::branchIfResultPlus() noexcept {
-    bool negative = prozessorStatus & 0x80;
+    bool negative = processorStatus & 0x80;
     branchIf(!negative);
 }
 
@@ -1279,7 +1275,7 @@ void Cpu::resetMemoryBit1() noexcept {
 void Cpu::clearCarry() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus &= 0b1111'1110;
+            processorStatus &= 0b1111'1110;
         }
         return;
     }
@@ -1393,13 +1389,13 @@ void Cpu::pullProcessorStatus() noexcept {
             pull();
             return;
         }
-        prozessorStatus = dataBuffer;
+        processorStatus = dataBuffer;
         return;
     }
     fetch();
 }
 
-void Cpu::andWithImediate() noexcept {
+void Cpu::andWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -1416,12 +1412,12 @@ void Cpu::andWithImediate() noexcept {
 void Cpu::rotateLeftA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            bool rememberCarry = prozessorStatus & 0x80;
+            bool rememberCarry = processorStatus & 0x80;
             if (A & 1) {
-                prozessorStatus |= 1;
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             A = A << 1;
             if (rememberCarry) {
@@ -1452,7 +1448,7 @@ void Cpu::branchOnBitReset2() noexcept {
 }
 
 void Cpu::branchIfResultMinus() noexcept {
-    bool negative = prozessorStatus & 0x80;
+    bool negative = processorStatus & 0x80;
     branchIf(negative);
 }
 
@@ -1483,7 +1479,7 @@ void Cpu::resetMemoryBit3() noexcept {
 void Cpu::setCarry() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus |= 0x1;
+            processorStatus |= 0x1;
         }
         return;
     }
@@ -1521,7 +1517,7 @@ void Cpu::branchOnBitReset3() noexcept {
     branchOnBitReset(3);
 }
 
-void Cpu::returnFromInterupt() noexcept {
+void Cpu::returnFromInterrupt() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -1541,7 +1537,7 @@ void Cpu::returnFromInterupt() noexcept {
             pull();
             return;
         }
-        prozessorStatus = dataBuffer;
+        processorStatus = dataBuffer;
         return;
     }
     if (TCU == 4) {
@@ -1594,7 +1590,7 @@ void Cpu::pushA() noexcept {
     fetch();
 }
 
-void Cpu::xorImediate() noexcept {
+void Cpu::xorImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -1611,12 +1607,11 @@ void Cpu::xorImediate() noexcept {
 void Cpu::shiftRightA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            bool carry = A & 1;
-            if (carry) {
-                prozessorStatus |= 1;
+            if ([[maybe_unused]] bool carry = A & 1) {
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             A = A >> 1;
             negativeZeroCheck(A);
@@ -1661,7 +1656,7 @@ void Cpu::branchOnBitReset4() noexcept {
 }
 
 void Cpu::branchIfOverflowClear() noexcept {
-    bool overflow = prozessorStatus & 0x40;
+    bool overflow = processorStatus & 0x40;
     branchIf(!overflow);
 }
 
@@ -1685,10 +1680,10 @@ void Cpu::resetMemoryBit5() noexcept {
     resetMemoryBit(5);
 }
 
-void Cpu::clearInteruptDisableFlag() noexcept {
+void Cpu::clearInterruptDisableFlag() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus &= 0b1111'1011;
+            processorStatus &= 0b1111'1011;
         }
         return;
     }
@@ -1799,7 +1794,7 @@ void Cpu::pullA() noexcept {
     fetch();
 }
 
-void Cpu::addWithImediate() noexcept {
+void Cpu::addWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -1815,12 +1810,12 @@ void Cpu::addWithImediate() noexcept {
 void Cpu::rotateRightA() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            bool rememberCarry = prozessorStatus & 1;
+            bool rememberCarry = processorStatus & 1;
             if (A & 1) {
-                prozessorStatus |= 1;
+                processorStatus |= 1;
             }
             else {
-                prozessorStatus &= 0b1111'1110;
+                processorStatus &= 0b1111'1110;
             }
             A = A >> 1;
             if (rememberCarry) {
@@ -1886,7 +1881,7 @@ void Cpu::branchOnBitReset6() noexcept {
 }
 
 void Cpu::branchIfOverflowSet() noexcept {
-    bool overflow = prozessorStatus & 0x40;
+    bool overflow = processorStatus & 0x40;
     branchIf(overflow);
 }
 
@@ -1914,10 +1909,10 @@ void Cpu::resetMemoryBit7() noexcept {
     resetMemoryBit(7);
 }
 
-void Cpu::setInteruptDisable() noexcept {
+void Cpu::setInterruptDisable() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus |= 0b0000'0100;
+            processorStatus |= 0b0000'0100;
         }
     }
     fetch();
@@ -2038,7 +2033,7 @@ void Cpu::decrementY() noexcept {
     fetch();
 }
 
-void Cpu::bitTestWithImediate() noexcept {
+void Cpu::bitTestWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2078,7 +2073,7 @@ void Cpu::branchOnBitSet0() noexcept {
 }
 
 void Cpu::branchIfCarryClear() noexcept {
-    bool carry = prozessorStatus & 1;
+    bool carry = processorStatus & 1;
     branchIf(!carry);
 }
 
@@ -2148,7 +2143,7 @@ void Cpu::branchOnBitSet1() noexcept {
     branchOnBitSet(1);
 }
 
-void Cpu::loadYImediate() noexcept {
+void Cpu::loadYImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2166,7 +2161,7 @@ void Cpu::loadAZeroPageWithXIndirect() noexcept {
     load(A, &Cpu::zeroPageWithXIndirect);
 }
 
-void Cpu::loadXImidiate() noexcept {
+void Cpu::loadXImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2207,7 +2202,7 @@ void Cpu::transferAToY() noexcept {
     fetch();
 }
 
-void Cpu::loadAImidiate() noexcept {
+void Cpu::loadAImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2249,7 +2244,7 @@ void Cpu::branchOnBitSet2() noexcept {
 }
 
 void Cpu::branchIfCarrySet() noexcept {
-    bool carry = prozessorStatus & 1;
+    bool carry = processorStatus & 1;
     branchIf(carry);
 }
 
@@ -2280,7 +2275,7 @@ void Cpu::setMemoryBit3() noexcept {
 void Cpu::clearOverflow() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus &= 0b1111'1110;
+            processorStatus &= 0b1111'1110;
         }
         return;
     }
@@ -2318,7 +2313,7 @@ void Cpu::branchOnBitSet3() noexcept {
     branchOnBitSet(3);
 }
 
-void Cpu::compareYWithImediate() noexcept {
+void Cpu::compareYWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2362,7 +2357,7 @@ void Cpu::incrementY() noexcept {
     fetch();
 }
 
-void Cpu::compareAWithImediate() noexcept {
+void Cpu::compareAWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2386,17 +2381,17 @@ void Cpu::decrementX() noexcept {
     fetch();
 }
 
-void Cpu::waitForInterupt() noexcept {
+void Cpu::waitForInterrupt() noexcept {
     // Documentation confusing
     if (!PHI2) {
-        if (interuptDemanded) {
+        if (interruptDemanded) {
             TCU = 0;
-            handleNonMaskebleInterupt();
+            handleNonMaskableInterrupt();
             return;
         }
-        if (interuptRequested) {
+        if (interruptRequested) {
             TCU = 0;
-            handleInteruptRequest();
+            handleInterruptRequest();
             return;
         }
     }
@@ -2420,7 +2415,7 @@ void Cpu::branchOnBitSet4() noexcept {
 }
 
 void Cpu::branchNotEqual() noexcept {
-    bool equal = prozessorStatus & 2; // zero flag
+    bool equal = processorStatus & 2; // zero flag
     branchIf(!equal);
 }
 
@@ -2447,7 +2442,7 @@ void Cpu::setMemoryBit5() noexcept {
 void Cpu::clearDecimalMode() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus &= 0b1111'0111;
+            processorStatus &= 0b1111'0111;
         }
         return;
     }
@@ -2473,7 +2468,7 @@ void Cpu::pushX() noexcept {
 }
 
 void Cpu::stopMode() noexcept {
-    // does nothing stays this way until reset
+    // does nothing, stays this way until reset
 }
 
 void Cpu::compareAWithAbsoluteWithX() noexcept {
@@ -2488,7 +2483,7 @@ void Cpu::branchOnBitSet5() noexcept {
     branchOnBitSet(5);
 }
 
-void Cpu::compareXWithImediate() noexcept {
+void Cpu::compareXWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2532,7 +2527,7 @@ void Cpu::incrementX() noexcept {
     fetch();
 }
 
-void Cpu::subtractWithImediate() noexcept {
+void Cpu::subtractWithImmediate() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
             addressBuffer = programCounter;
@@ -2569,7 +2564,7 @@ void Cpu::branchOnBitSet6() noexcept {
 }
 
 void Cpu::branchIfEqual() noexcept {
-    bool equal = prozessorStatus & 2; // zero flag
+    bool equal = processorStatus & 2; // zero flag
     branchIf(equal);
 }
 
@@ -2596,7 +2591,7 @@ void Cpu::setMemoryBit7() noexcept {
 void Cpu::setDecimalMode() noexcept {
     if (TCU == 1) {
         if (!PHI2) {
-            prozessorStatus |= 0b0000'1000;
+            processorStatus |= 0b0000'1000;
         }
         return;
     }
@@ -2641,7 +2636,7 @@ void Cpu::branchOnBitSet7() noexcept {
 Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
     bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O, const bool& _RESB) noexcept :
     data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB}, NMIB{_NMIB},
-    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O}, PHI2O{_PHI2O}, RESB{_RESB} {}
+    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O}, PHI2O{_PHI2O}, RESB{_RESB} { }
 
 void Cpu::cycle() noexcept {
     if (RESB) {
@@ -2656,11 +2651,11 @@ void Cpu::cycle() noexcept {
     }
     PHI1O = !PHI2;
     PHI2O = PHI2;
-    if (!(IRQB || (prozessorStatus & 0x4))) {
-        interuptRequested = true;
+    if (!(IRQB || (processorStatus & 0x4))) {
+        interruptRequested = true;
     }
     if (!NMIB && NMIB_Before) {
-        interuptDemanded = true;
+        interruptDemanded = true;
     }
     NMIB_Before = NMIB;
     if (lastClockState == PHI2) {
@@ -2676,8 +2671,8 @@ void Cpu::cycle() noexcept {
     }
     lastClockState = PHI2;
     if (resetTimer) {
-        interuptRequested = false;
-        interuptDemanded = false;
+        interruptRequested = false;
+        interruptDemanded = false;
         if (!PHI2) {
             readWriteBuffer = true;
             --resetTimer;
@@ -2695,12 +2690,12 @@ void Cpu::cycle() noexcept {
         ++TCU;
     }
     if (followingRequest) {
-        handleInteruptRequest();
+        handleInterruptRequest();
         toBus();
         return;
     }
     if (followingOrder) {
-        handleNonMaskebleInterupt();
+        handleNonMaskableInterrupt();
         toBus();
         return;
     }
@@ -2728,7 +2723,7 @@ void Cpu::cycle() noexcept {
         resetMemoryBit0();
         break;
     case 0x08:
-        pushProzessorStatus();
+        pushProcessorStatus();
         break;
     case 0x09:
         orWithImmediate();
@@ -2812,7 +2807,7 @@ void Cpu::cycle() noexcept {
         pullProcessorStatus();
         break;
     case 0x29:
-        andWithImediate();
+        andWithImmediate();
         break;
     case 0x2a:
         rotateLeftA();
@@ -2872,7 +2867,7 @@ void Cpu::cycle() noexcept {
         branchOnBitReset3();
         break;
     case 0x40:
-        returnFromInterupt();
+        returnFromInterrupt();
         break;
     case 0x41:
         xorWithZeroPageWithXIndirect();
@@ -2890,7 +2885,7 @@ void Cpu::cycle() noexcept {
         pushA();
         break;
     case 0x49:
-        xorImediate();
+        xorImmediate();
         break;
     case 0x4a:
         shiftRightA();
@@ -2926,7 +2921,7 @@ void Cpu::cycle() noexcept {
         resetMemoryBit5();
         break;
     case 0x58:
-        clearInteruptDisableFlag();
+        clearInterruptDisableFlag();
         break;
     case 0x59:
         xorWithAbsoluteWithY();
@@ -2965,7 +2960,7 @@ void Cpu::cycle() noexcept {
         pullA();
         break;
     case 0x69:
-        addWithImediate();
+        addWithImmediate();
         break;
     case 0x6a:
         rotateRightA();
@@ -3004,7 +2999,7 @@ void Cpu::cycle() noexcept {
         resetMemoryBit7();
         break;
     case 0x78:
-        setInteruptDisable();
+        setInterruptDisable();
         break;
     case 0x79:
         addWithAbsoluteWithY();
@@ -3046,7 +3041,7 @@ void Cpu::cycle() noexcept {
         decrementY();
         break;
     case 0x89:
-        bitTestWithImediate();
+        bitTestWithImmediate();
         break;
     case 0x8a:
         transferXtoA();
@@ -3106,13 +3101,13 @@ void Cpu::cycle() noexcept {
         branchOnBitSet1();
         break;
     case 0xa0:
-        loadYImediate();
+        loadYImmediate();
         break;
     case 0xa1:
         loadAZeroPageWithXIndirect();
         break;
     case 0xa2:
-        loadXImidiate();
+        loadXImmediate();
         break;
     case 0xa4:
         loadYZeroPage();
@@ -3130,7 +3125,7 @@ void Cpu::cycle() noexcept {
         transferAToY();
         break;
     case 0xa9:
-        loadAImidiate();
+        loadAImmediate();
         break;
     case 0xaa:
         transferAToX();
@@ -3190,7 +3185,7 @@ void Cpu::cycle() noexcept {
         branchOnBitSet3();
         break;
     case 0xc0:
-        compareYWithImediate();
+        compareYWithImmediate();
         break;
     case 0xc1:
         compareAWithZeroPageWithXIndirect();
@@ -3211,13 +3206,13 @@ void Cpu::cycle() noexcept {
         incrementY();
         break;
     case 0xc9:
-        compareAWithImediate();
+        compareAWithImmediate();
         break;
     case 0xca:
         decrementX();
         break;
     case 0xcb:
-        waitForInterupt();
+        waitForInterrupt();
         break;
     case 0xcc:
         compareYWithAbsolute();
@@ -3271,7 +3266,7 @@ void Cpu::cycle() noexcept {
         branchOnBitSet5();
         break;
     case 0xe0:
-        compareXWithImediate();
+        compareXWithImmediate();
         break;
     case 0xe1:
         subtractWithZeroPageWithXIndirect();
@@ -3292,7 +3287,7 @@ void Cpu::cycle() noexcept {
         incrementX();
         break;
     case 0xe9:
-        subtractWithImediate();
+        subtractWithImmediate();
         break;
     case 0xea:
         noop();
@@ -3356,8 +3351,8 @@ void Cpu::cycle() noexcept {
 void Cpu::reset() noexcept {
     followingRequest = false;
     followingOrder = false;
-    prozessorStatus &= 0b1111'0111;
-    prozessorStatus |= 0b0011'0100;
+    processorStatus &= 0b1111'0111;
+    processorStatus |= 0b0011'0100;
     resetTimer = 7;
     IR = 0x6C;
 }

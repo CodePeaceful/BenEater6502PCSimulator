@@ -4,10 +4,10 @@ project(EaterPC)
 
 set(CMAKE_CXX_STANDARD 23)
 
-message (${CMAKE_C_COMPILER})
-message (${CMAKE_CXX_COMPILER})
-message (${CMAKE_CXX_COMPILER_AR})
-message (${CMAKE_CXX_COMPILER_RANLIB})
+message ("${CMAKE_C_COMPILER}")
+message ("${CMAKE_CXX_COMPILER}")
+message ("${CMAKE_CXX_COMPILER_AR}")
+message ("${CMAKE_CXX_COMPILER_RANLIB}")
 
 if (MSVC)
     # warning level 4
@@ -17,7 +17,7 @@ else()
     # additional warnings
     add_compile_options(-Wall -Wextra -Wpedantic)
     #add_compile_options(-O3)
-    #add_link_options(-FLTO)
+    #add_link_options(-flto)
 endif()
 
 set(SFML_STATIC_LIBRARIES TRUE)

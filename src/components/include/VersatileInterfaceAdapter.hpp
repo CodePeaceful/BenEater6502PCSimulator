@@ -1,9 +1,9 @@
 #pragma once
 
-class VersatileInterfaceAdapter
+class VersatileInterfaceAdapter final
 {
 private:
-    // pin referencens
+    // pin references
     const bool& RWB; // readWrite to attach to Cpu
     const bool& CS1; // Chip select high
     const bool& CS2B; // Chip select low
@@ -14,11 +14,11 @@ private:
     const bool& RS1; // register select
     const bool& RS2; // register select
     const bool& RS3; // register select
-    bool& CA1; // interupting IO
-    bool& CA2; // interupting IO
-    bool& CB1; // interupting IO
-    bool& CB2; // interupting IO
-    bool& IRQB; // interupt out for Cpu
+    bool& CA1; // interrupting IO
+    bool& CA2; // interrupting IO
+    bool& CB1; // interrupting IO
+    bool& CB2; // interrupting IO
+    bool& IRQB; // interrupt out for Cpu
     const bool& PHI2;
     const bool& RESB;
 
@@ -28,8 +28,8 @@ private:
     unsigned char portARegister; // PA7 - PA0
     unsigned char portBRegister; // PB7 - PB0
     unsigned char peripheralControlRegister;
-    unsigned char interuptFlagRegister; // IRQ Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
-    unsigned char interuptEnableRegister; // SetClear Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
+    unsigned char interruptFlagRegister; // IRQ Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
+    unsigned char interruptEnableRegister; // SetClear Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
 
     // edge detectors
     bool CA1before;

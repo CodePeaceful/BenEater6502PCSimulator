@@ -3,3 +3,5 @@ doc
 .vscode
 src/program.6502
 libs
+.idea
+cmake-build-debug

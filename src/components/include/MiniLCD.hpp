@@ -6,8 +6,8 @@
 #include <SFML/Graphics.hpp>
 
 /// busy expects the lcd to be updated twice per cycle of 1MHz
-/// four bit mode or any non screen equivalent mode throws exeption
-class MiniLCD
+/// four bit mode or any non screen equivalent mode throws exception
+class MiniLCD final
 {
 private:
     // Pin References
@@ -49,7 +49,7 @@ private:
     void cycleData();
 
     // Magic 
-        // to be run is architectual thread
+        // to be run is architectural thread
     void updateTexture();
     void updateDisplay();
 

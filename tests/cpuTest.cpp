@@ -35,10 +35,10 @@ TEST(addWithCarry, noDecimal_noCarry_params_resultA_resultStatus_A_Status_second
     Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI2O, PHI1O, RESB);
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         cpu.A = inA;
-        cpu.prozessorStatus = inFlags;
+        cpu.processorStatus = inFlags;
         cpu.addWithCarry(inValue);
         ASSERT_EQ(resultA, cpu.A);
-        ASSERT_EQ(resultFlags, cpu.prozessorStatus);
+        ASSERT_EQ(resultFlags, cpu.processorStatus);
     }
 }
 
@@ -71,10 +71,10 @@ TEST(addWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_secon
     Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI2O, PHI1O, RESB);
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         cpu.A = inA;
-        cpu.prozessorStatus = inFlags;
+        cpu.processorStatus = inFlags;
         cpu.addWithCarry(inValue);
         ASSERT_EQ(resultA, cpu.A);
-        ASSERT_EQ(resultFlags, cpu.prozessorStatus);
+        ASSERT_EQ(resultFlags, cpu.processorStatus);
     }
 }
 
@@ -93,9 +93,9 @@ TEST(subtractWithCarry, noDecimal_noCarry_params_resultA_resultStatus_A_Status_s
     unsigned short address{0};
     bool VPB{true}; // Vector Pull
     bool RDY{true}; // ready: run on high
-    bool IRQB{true}; // interupt: on low
+    bool IRQB{true}; // interrupt: on low
     bool MLB{true}; // memory lock
-    bool NMIB{true}; // non maskable interupt: on low
+    bool NMIB{true}; // non maskable interrupt: on low
     bool SYNC{true}; //??
     bool RWB{true}; // read or write: high = read, low = write
     bool BE{true}; // bus enable
@@ -107,10 +107,10 @@ TEST(subtractWithCarry, noDecimal_noCarry_params_resultA_resultStatus_A_Status_s
     Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI2O, PHI1O, RESB);
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         cpu.A = inA;
-        cpu.prozessorStatus = inFlags;
+        cpu.processorStatus = inFlags;
         cpu.subtractWithCarry(inValue);
         ASSERT_EQ(resultA, cpu.A);
-        ASSERT_EQ(resultFlags, cpu.prozessorStatus);
+        ASSERT_EQ(resultFlags, cpu.processorStatus);
     }
 }
 
@@ -129,9 +129,9 @@ TEST(subtractWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_
     unsigned short address{0};
     bool VPB{true}; // Vector Pull
     bool RDY{true}; // ready: run on high
-    bool IRQB{true}; // interupt: on low
+    bool IRQB{true}; // interrupt: on low
     bool MLB{true}; // memory lock
-    bool NMIB{true}; // non maskable interupt: on low
+    bool NMIB{true}; // non maskable interrupt: on low
     bool SYNC{true}; //??
     bool RWB{true}; // read or write: high = read, low = write
     bool BE{true}; // bus enable
@@ -143,10 +143,10 @@ TEST(subtractWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_
     Cpu cpu(data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI2O, PHI1O, RESB);
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         cpu.A = inA;
-        cpu.prozessorStatus = inFlags;
+        cpu.processorStatus = inFlags;
         cpu.subtractWithCarry(inValue);
         ASSERT_EQ(resultA, cpu.A);
-        ASSERT_EQ(resultFlags, cpu.prozessorStatus);
+        ASSERT_EQ(resultFlags, cpu.processorStatus);
     }
 }
 
