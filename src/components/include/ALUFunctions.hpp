@@ -90,6 +90,8 @@ inline uint8_t xorOperation(uint8_t first, uint8_t second, uint8_t& processorSta
     return result;
 }
 
+
+// TODO: Implement tests
 inline void bitTest(uint8_t value, uint8_t& processorStatus, uint8_t testValue) noexcept {
     // Set zero flag
     if ((value & testValue) == 0) {
@@ -139,6 +141,7 @@ inline void compare(uint8_t first, uint8_t second, uint8_t& processorStatus) noe
     }
 }
 
+// TODO: Implement tests
 inline uint8_t shiftLeft(uint8_t value, uint8_t& processorStatus) noexcept {
     if (value & 0x80) {
         processorStatus |= 0x01; // Set carry flag
@@ -151,6 +154,7 @@ inline uint8_t shiftLeft(uint8_t value, uint8_t& processorStatus) noexcept {
     return value;
 }
 
+// TODO: Implement tests
 inline uint8_t shiftRight(uint8_t value, uint8_t& processorStatus) noexcept {
     if (value & 0x01) {
         processorStatus |= 0x01; // Set carry flag
@@ -163,6 +167,7 @@ inline uint8_t shiftRight(uint8_t value, uint8_t& processorStatus) noexcept {
     return value;
 }
 
+// TODO: Implement tests
 inline uint8_t rotateLeft(uint8_t value, uint8_t& processorStatus) noexcept {
     const bool carryIn = (processorStatus & 0x01) != 0;
     const bool newCarry = (value & 0x80) != 0;
@@ -180,6 +185,7 @@ inline uint8_t rotateLeft(uint8_t value, uint8_t& processorStatus) noexcept {
     return value;
 }
 
+// TODO: Implement tests
 inline uint8_t rotateRight(uint8_t value, uint8_t& processorStatus) noexcept {
     const bool carryIn = (processorStatus & 0x01) != 0;
     const bool newCarry = (value & 0x01) != 0;

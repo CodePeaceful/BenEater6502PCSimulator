@@ -57,18 +57,14 @@ private:
     void negativeZeroCheck(unsigned char value)noexcept;
 
     // executions
-    void addWithCarry(unsigned char value)noexcept;
     void addWithCarry(bool(Cpu::* address)())noexcept;
-    void subtractWithCarry(unsigned char value)noexcept;
     void subtractWithCarry(bool(Cpu::* address)())noexcept;
     void orA(bool(Cpu::* address)())noexcept;
     void andA(bool(Cpu::* address)())noexcept;
     void xorA(bool(Cpu::* address)())noexcept;
     void load(unsigned char& cpuRegister, bool(Cpu::* address)())noexcept;
     void store(unsigned char value, bool(Cpu::* address)())noexcept;
-    void bitTest(unsigned char second)noexcept;
     void bitTest(bool(Cpu::* address)())noexcept;
-    void compare(unsigned char first, unsigned char second)noexcept;
     void compare(unsigned char first, bool(Cpu::* address)())noexcept;
     void testAndSetMemoryBit(bool(Cpu::* address)())noexcept;
     void testAndResetMemoryBit(bool(Cpu::* address)())noexcept;

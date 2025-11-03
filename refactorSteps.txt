@@ -1,0 +1,4 @@
+hardware needs 2 low and 2 high cycles per clock cycle so any configuration works
+
+cpu class is bloated and untestable, needs functions to be extracted
+    -ALU extracted

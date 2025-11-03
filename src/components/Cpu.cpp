@@ -5,6 +5,8 @@
 
 #include <print>
 
+#include "ALUFunctions.hpp"
+
 void Cpu::fetch() noexcept {
     if (interruptDemanded) {
         TCU = 0;
@@ -166,28 +168,6 @@ void Cpu::negativeZeroCheck(unsigned char value) noexcept {
     }
 }
 
-void Cpu::addWithCarry(unsigned char value) noexcept {
-    const bool A7 = A & 0b1000'0000;
-    const bool v7 = value & 0b1000'0000;
-    const bool carry = processorStatus & 1;
-    A += value;
-    if (carry) {
-        ++A;
-    }
-    const bool A7new = A & 0b1000'0000;
-    // clear Overflow and carry
-    processorStatus &= 0b1011'1110;
-    // overflow
-    if (A7 == v7 && A7 != A7new) {
-        processorStatus |= 0b0100'0000;
-    }
-    // carry
-    if ((A7 && v7) || ((A7 ^ v7) && !A7new)) {
-        processorStatus |= 0b1;
-    }
-    negativeZeroCheck(A);
-}
-
 void Cpu::addWithCarry(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
@@ -197,38 +177,10 @@ void Cpu::addWithCarry(bool (Cpu::* address)()) noexcept {
             return;
         }
         ++writeBackCounter;
-        addWithCarry(dataBuffer);
+        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
         return;
     }
     fetch();
-}
-
-void Cpu::subtractWithCarry(const unsigned char value) noexcept {
-    const bool A7 = A & 0b1000'0000;
-    const bool v7 = value & 0b1000'0000;
-    const bool carry = processorStatus & 1;
-
-    bool borrow = A < value;
-    if (!carry) {
-        --A;
-        borrow = A < value;
-        if (A == 255) {
-            borrow = true;
-        }
-    }
-    A -= value;
-    const bool A7new = A & 0b1000'0000;
-    // clear Overflow and carry
-    processorStatus &= 0b1011'1110;
-    // overflow
-    if (A7 != v7 && A7 != A7new) {
-        processorStatus |= 0b0100'0000;
-    }
-    // carry
-    if (!borrow) {
-        processorStatus |= 1;
-    }
-    negativeZeroCheck(A);
 }
 
 void Cpu::subtractWithCarry(bool (Cpu::* address)()) noexcept {
@@ -240,7 +192,7 @@ void Cpu::subtractWithCarry(bool (Cpu::* address)()) noexcept {
             return;
         }
         ++writeBackCounter;
-        subtractWithCarry(dataBuffer);
+        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
         return;
     }
     fetch();
@@ -326,27 +278,6 @@ void Cpu::store(const unsigned char value, bool (Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::bitTest(const unsigned char second) noexcept {
-    if (A & second) {
-        processorStatus &= 0b1111'1101;
-    }
-    else {
-        processorStatus |= 2;
-    }
-    if (second & 0b1000'0000) {
-        processorStatus |= 0b1000'0000;
-    }
-    else {
-        processorStatus &= 0b0111'1111;
-    }
-    if (second & 0b0100'0000) {
-        processorStatus |= 0b0100'0000;
-    }
-    else {
-        processorStatus &= 0b1011'1111;
-    }
-}
-
 void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
@@ -355,32 +286,11 @@ void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
         if (!PHI2) {
             return;
         }
-        bitTest(dataBuffer);
+        ALUFunctions::bitTest(A, processorStatus, dataBuffer);
         ++writeBackCounter;
         return;
     }
     fetch();
-}
-
-void Cpu::compare(const unsigned char first, const unsigned char second) noexcept {
-    if (first >= second) {
-        processorStatus |= 1; // set carry
-    }
-    else {
-        processorStatus &= 0b1111'1110; // clear carry
-    }
-    if (first == second) {
-        processorStatus |= 2; // set zero
-    }
-    else {
-        processorStatus &= 0b1111'1101; // clear zero
-    }
-    if (first & 0x80 && first != second) {
-        processorStatus |= 0b1000'0000; // set negative
-    }
-    else {
-        processorStatus &= 0b0111'1111; // clear negative
-    }
 }
 
 void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
@@ -391,7 +301,7 @@ void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
         if (!PHI2) {
             return;
         }
-        compare(first, dataBuffer);
+        ALUFunctions::compare(first, dataBuffer, processorStatus);
         ++writeBackCounter;
         return;
     }
@@ -1806,7 +1716,7 @@ void Cpu::addWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        addWithCarry(dataBuffer);
+        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
         return;
     }
     fetch();
@@ -2045,7 +1955,7 @@ void Cpu::bitTestWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        bitTest(dataBuffer);
+        ALUFunctions::bitTest(A, dataBuffer, processorStatus);
     }
     fetch();
 }
@@ -2325,7 +2235,7 @@ void Cpu::compareYWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        compare(Y, dataBuffer);
+        ALUFunctions::compare(Y, dataBuffer, processorStatus);
         return;
     }
     fetch();
@@ -2369,7 +2279,7 @@ void Cpu::compareAWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        compare(A, dataBuffer);
+        ALUFunctions::compare(A, dataBuffer, processorStatus);
         return;
     }
     fetch();
@@ -2495,7 +2405,7 @@ void Cpu::compareXWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        compare(X, dataBuffer);
+        ALUFunctions::compare(X, dataBuffer, processorStatus);
         return;
     }
     fetch();
@@ -2539,7 +2449,7 @@ void Cpu::subtractWithImmediate() noexcept {
             ++programCounter;
             return;
         }
-        subtractWithCarry(dataBuffer);
+        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
         return;
     }
     fetch();
