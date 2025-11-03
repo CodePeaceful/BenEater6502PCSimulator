@@ -188,7 +188,7 @@ void Cpu::addWithCarry(unsigned char value) noexcept {
     negativeZeroCheck(A);
 }
 
-void Cpu::addWithCarry(bool(Cpu::* address)()) noexcept {
+void Cpu::addWithCarry(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -231,7 +231,7 @@ void Cpu::subtractWithCarry(const unsigned char value) noexcept {
     negativeZeroCheck(A);
 }
 
-void Cpu::subtractWithCarry(bool(Cpu::* address)()) noexcept {
+void Cpu::subtractWithCarry(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -246,7 +246,7 @@ void Cpu::subtractWithCarry(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::orA(bool(Cpu::* address)()) noexcept {
+void Cpu::orA(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -262,7 +262,7 @@ void Cpu::orA(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::andA(bool(Cpu::* address)()) noexcept {
+void Cpu::andA(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -278,7 +278,7 @@ void Cpu::andA(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::xorA(bool(Cpu::* address)()) noexcept {
+void Cpu::xorA(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -294,7 +294,7 @@ void Cpu::xorA(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::load(unsigned char& cpuRegister, bool(Cpu::* address)()) noexcept {
+void Cpu::load(unsigned char& cpuRegister, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -310,7 +310,7 @@ void Cpu::load(unsigned char& cpuRegister, bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::store(const unsigned char value, bool(Cpu::* address)()) noexcept {
+void Cpu::store(const unsigned char value, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -347,7 +347,7 @@ void Cpu::bitTest(const unsigned char second) noexcept {
     }
 }
 
-void Cpu::bitTest(bool(Cpu::* address)()) noexcept {
+void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -383,7 +383,7 @@ void Cpu::compare(const unsigned char first, const unsigned char second) noexcep
     }
 }
 
-void Cpu::compare(const unsigned char first, bool(Cpu::* address)()) noexcept {
+void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -398,7 +398,7 @@ void Cpu::compare(const unsigned char first, bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::testAndSetMemoryBit(bool(Cpu::* address)()) noexcept {
+void Cpu::testAndSetMemoryBit(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -436,7 +436,7 @@ void Cpu::testAndSetMemoryBit(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::testAndResetMemoryBit(bool(Cpu::* address)()) noexcept {
+void Cpu::testAndResetMemoryBit(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -474,7 +474,7 @@ void Cpu::testAndResetMemoryBit(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::rotateRight(bool(Cpu::* address)()) noexcept {
+void Cpu::rotateRight(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -517,7 +517,7 @@ void Cpu::rotateRight(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::rotateLeft(bool(Cpu::* address)()) noexcept {
+void Cpu::rotateLeft(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -560,7 +560,7 @@ void Cpu::rotateLeft(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::shiftRight(bool(Cpu::* address)()) noexcept {
+void Cpu::shiftRight(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -599,7 +599,7 @@ void Cpu::shiftRight(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::shiftLeft(bool(Cpu::* address)()) noexcept {
+void Cpu::shiftLeft(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -638,7 +638,7 @@ void Cpu::shiftLeft(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::increment(bool(Cpu::* address)()) noexcept {
+void Cpu::increment(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -671,7 +671,7 @@ void Cpu::increment(bool(Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::decrement(bool(Cpu::* address)()) noexcept {
+void Cpu::decrement(bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -2638,10 +2638,13 @@ void Cpu::branchOnBitSet7() noexcept {
     branchOnBitSet(7);
 }
 
-Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
-    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O, const bool& _RESB) noexcept :
-    data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB}, NMIB{_NMIB},
-    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O}, PHI2O{_PHI2O}, RESB{_RESB} { }
+Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB,
+    const bool& _NMIB,
+    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O,
+    const bool& _RESB) noexcept : data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB},
+    NMIB{_NMIB},
+    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O},
+    PHI2O{_PHI2O}, RESB{_RESB} { }
 
 void Cpu::cycle() noexcept {
     if (RESB) {
