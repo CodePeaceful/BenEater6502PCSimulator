@@ -1,4 +1,36 @@
 hardware needs 2 low and 2 high cycles per clock cycle so any configuration works
+    timing notes:
+        - CPU:
+            - address MLB R/W SYNC VPB
+                is set during low 2 and garanteed until the end of high 2
+            - data will be read during high 2
+            - data will be written at high 1 but heald until the end of high 2
+            - SOB ?? low 2 to high 1
+            - IRQB NMIB RDY RESB will be checked during high 2
+            - BE effects in next subcycle
+
+        - VersatileInterfaceAdapter
+            - all controll pins are checked at high 1
+            - peripherals are checked and buffered at low 2
+            - after write peripherals will be set at next low 2
+            as timing will stay simplified
+            - data will be read during high 2
+            - data will be written at high 1 but heald until the end of high 2
+            other timings to be determined at implementation of feature
+
+        - RAM
+            to keep it working
+            - after controlls are set
+                - 2 subcycles data will be read
+                - 1 subcycle data will be written and kept for an extra subcycle
+
+        - ROM
+            to keep it working
+            - after controlls are set
+                - 1 subcycle data will be written and kept for an extra subcycle
+
+        - Screen 
+            all timings are milliseconds independent of clock
 
 cpu class is bloated and untestable, needs functions to be extracted
     -ALU extracted
