@@ -153,2474 +153,7 @@ void Cpu::handleNonMaskableInterrupt() noexcept {
     }
 }
 
-void Cpu::negativeZeroCheck(unsigned char value) noexcept {
-    if (value == 0) {
-        processorStatus |= 0b0000'0010;
-    }
-    else {
-        processorStatus &= 0b1111'1101;
-    }
-    if (value & 0x80) {
-        processorStatus |= 0b1000'0000;
-    }
-    else {
-        processorStatus &= 0b0111'1111;
-    }
-}
-
-void Cpu::addWithCarry(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::subtractWithCarry(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::orA(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        A |= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::andA(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        A &= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorA(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        A ^= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::load(unsigned char& cpuRegister, bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ++writeBackCounter;
-        cpuRegister = dataBuffer;
-        negativeZeroCheck(cpuRegister);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::store(const unsigned char value, bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            dataBuffer = value;
-            readWriteBuffer = false;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ALUFunctions::bitTest(A, processorStatus, dataBuffer);
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        ALUFunctions::compare(first, dataBuffer, processorStatus);
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::testAndSetMemoryBit(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            if ((A & instructionBufferLow) == 0) {
-                processorStatus |= 2;
-            }
-            else {
-                processorStatus &= 0b1111'1101;
-            }
-            instructionBufferLow |= A;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::testAndResetMemoryBit(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            if ((A & instructionBufferLow) == 0) {
-                processorStatus |= 2;
-            }
-            else {
-                processorStatus &= 0b1111'1101;
-            }
-            instructionBufferLow &= ~A;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::rotateRight(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            const bool rememberCarry = processorStatus & 1;
-            if (instructionBufferLow & 1) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            instructionBufferLow = instructionBufferLow >> 1;
-            if (rememberCarry) {
-                instructionBufferLow |= 0x80;
-            }
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::rotateLeft(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            const bool rememberCarry = processorStatus & 1;
-            if (instructionBufferLow & 0x80) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            instructionBufferLow = instructionBufferLow << 1;
-            if (rememberCarry) {
-                instructionBufferLow |= 1;
-            }
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::shiftRight(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            if ([[maybe_unused]] bool carry = instructionBufferLow & 1) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            instructionBufferLow = instructionBufferLow >> 1;
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::shiftLeft(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            if ([[maybe_unused]] bool carry = instructionBufferLow & 0x80) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            instructionBufferLow = instructionBufferLow << 1;
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::increment(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            ++instructionBufferLow;
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::decrement(bool (Cpu::* address)()) noexcept {
-    if (!std::invoke(address, *this)) {
-        return;
-    }
-    if (writeBackCounter == 0) {
-        if (!PHI2) {
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 1) {
-        if (!PHI2) {
-            --instructionBufferLow;
-            negativeZeroCheck(instructionBufferLow);
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    if (writeBackCounter == 2) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-            return;
-        }
-        ++writeBackCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
-    if (TCU >= 2) {
-        zeroPage();
-        if (TCU == 2 && PHI2) {
-            instructionBufferLow = dataBuffer;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        unsigned char thisBit = 1 << bitId;
-        thisBit = ~thisBit;
-        instructionBufferLow &= thisBit;
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
-    if (TCU >= 2) {
-        zeroPage();
-        if (TCU == 2 && PHI2) {
-            instructionBufferLow = dataBuffer;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        const unsigned char thisBit = 1 << bitId;
-        instructionBufferLow |= thisBit;
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            readWriteBuffer = false;
-            dataBuffer = instructionBufferLow;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
-    if (TCU <= 2) {
-        zeroPage();
-        if (TCU == 2 && PHI2) {
-            instructionBufferHigh = dataBuffer;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 5) {
-        unsigned char thisBit = 1 << bitId;
-        bool condition = thisBit & instructionBufferHigh;
-        if (!condition) {
-            if (!PHI2) {
-                programCounter += instructionBufferLow;
-            }
-            return;
-        }
-    }
-    fetch();
-}
-
-void Cpu::branchOnBitSet(const unsigned char bitId) noexcept {
-    if (TCU <= 2) {
-        zeroPage();
-        if (TCU == 2 && PHI2) {
-            instructionBufferHigh = dataBuffer;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 5) {
-        if (const unsigned char thisBit = 1 << bitId; thisBit & instructionBufferHigh) {
-            if (!PHI2) {
-                programCounter += instructionBufferLow;
-            }
-            return;
-        }
-    }
-    fetch();
-}
-
-void Cpu::branchIf(const bool condition) noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 2) {
-        if (condition) {
-            if (!PHI2) {
-                programCounter += instructionBufferLow;
-                if (instructionBufferLow & 0xf0) {
-                    programCounter -= 256;
-                }
-            }
-            return;
-        }
-    }
-    fetch();
-}
-
-void Cpu::push(const unsigned char data) noexcept {
-    addressBuffer = 0x100 + stackPointer;
-    readWriteBuffer = false;
-    dataBuffer = data;
-    --stackPointer;
-}
-
-void Cpu::pull() noexcept {
-    ++stackPointer;
-    addressBuffer = 0x100 + stackPointer;
-}
-
-bool Cpu::zeroPage() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::zeroPageIndirect() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            ++addressBuffer;
-            addressBuffer %= 256;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        return false;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::zeroPageWithXIndirect() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            instructionBufferLow += X;
-        }
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        return false;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            ++addressBuffer;
-            addressBuffer %= 256;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        return false;
-    }
-    if (TCU == 5) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::zeroPageIndirectWithY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            ++addressBuffer;
-            addressBuffer %= 256;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        return false;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + Y;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::zeroPageWithX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            instructionBufferLow += X;
-        }
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::zeroPageWithY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            instructionBufferLow += Y;
-        }
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::absoluteIndirect() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        return false;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            ++addressBuffer;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        return false;
-    }
-    if (TCU == 5) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::absolute() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::absoluteWithX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + X;
-            return true;
-        }
-    }
-    return true;
-}
-
-bool Cpu::absoluteWithY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return false;
-        }
-        instructionBufferHigh = dataBuffer;
-        ++programCounter;
-        return false;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + Y;
-            return true;
-        }
-    }
-    return true;
-}
-
-void Cpu::breakRequest() noexcept {
-    throw std::runtime_error("no break");
-}
-
-void Cpu::orWithZeroPageWithXIndirect() noexcept {
-    orA(&Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::testAndSetMemoryBitZeroPage() noexcept {
-    testAndSetMemoryBit(&Cpu::zeroPage);
-}
-
-void Cpu::orWithZeroPage() noexcept {
-    orA(&Cpu::zeroPage);
-}
-
-
-void Cpu::shiftLeftZeroPage() noexcept {
-    shiftLeft(&Cpu::zeroPage);
-}
-
-void Cpu::resetMemoryBit0() noexcept {
-    resetMemoryBit(0);
-}
-
-void Cpu::pushProcessorStatus() noexcept {
-    if (TCU == 1) {
-        addressBuffer = 0x100 + stackPointer;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            push(processorStatus);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::orWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        A |= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::shiftLeftA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            if ([[maybe_unused]] bool carry = A & 0x80) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            A = A << 1;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::testAndSetMemoryBitAbsolute() noexcept {
-    testAndSetMemoryBit(&Cpu::absolute);
-}
-
-void Cpu::orWithAbsolute() noexcept {
-    orA(&Cpu::absolute);
-}
-
-void Cpu::shiftLeftAbsolute() noexcept {
-    shiftLeft(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitReset0() noexcept {
-    branchOnBitReset(0);
-}
-
-void Cpu::branchIfResultPlus() noexcept {
-    bool negative = processorStatus & 0x80;
-    branchIf(!negative);
-}
-
-void Cpu::orWithZeroPageIndirectWithY() noexcept {
-    orA(&Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::orWithZeroPageIndirect() noexcept {
-    orA(&Cpu::zeroPageIndirect);
-}
-
-void Cpu::testAndResetMemoryBitZeroPage() noexcept {
-    testAndResetMemoryBit(&Cpu::zeroPage);
-}
-
-void Cpu::orWithZeroPageWithX() noexcept {
-    orA(&Cpu::zeroPageWithX);
-}
-
-void Cpu::shiftLeftZeroPageWithX() noexcept {
-    shiftLeft(&Cpu::zeroPageWithX);
-}
-
-void Cpu::resetMemoryBit1() noexcept {
-    resetMemoryBit(1);
-}
-
-void Cpu::clearCarry() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus &= 0b1111'1110;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::orWithAbsoluteWithY() noexcept {
-    orA(&Cpu::absoluteWithY);
-}
-
-void Cpu::incrementA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            ++A;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::testAndResetMemoryBitAbsolute() noexcept {
-    testAndResetMemoryBit(&Cpu::absolute);
-}
-
-void Cpu::orWithAbsoluteWithX() noexcept {
-    orA(&Cpu::absoluteWithX);
-}
-
-void Cpu::shiftLeftAbsoluteWithX() noexcept {
-    shiftLeft(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitReset1() noexcept {
-    branchOnBitReset(1);
-}
-
-void Cpu::jumpToSubroutine() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-            return;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            push(programCounter >> 8);
-            return;
-        }
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            push(programCounter & 0xff);
-            return;
-        }
-        return;
-    }
-    if (TCU == 5) {
-        if (!PHI2) {
-            readWriteBuffer = true;
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::andWithZeroPageWithXIndirect() noexcept {
-    andA(&Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::bitTestWithZeroPage() noexcept {
-    bitTest(&Cpu::zeroPage);
-}
-
-void Cpu::andWithZeroPage() noexcept {
-    andA(&Cpu::zeroPage);
-}
-
-void Cpu::rotateLeftZeroPage() noexcept {
-    rotateLeft(&Cpu::zeroPage);
-}
-
-void Cpu::resetMemoryBit2() noexcept {
-    resetMemoryBit(2);
-}
-
-void Cpu::pullProcessorStatus() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        processorStatus = dataBuffer;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::andWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        A &= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::rotateLeftA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            bool rememberCarry = processorStatus & 0x80;
-            if (A & 1) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            A = A << 1;
-            if (rememberCarry) {
-                A |= 1;
-            }
-            negativeZeroCheck(A);
-            return;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::bitTestWithAbsolute() noexcept {
-    bitTest(&Cpu::absolute);
-}
-
-void Cpu::andWithAbsolute() noexcept {
-    andA(&Cpu::absolute);
-}
-
-void Cpu::rotateLeftAbsolute() noexcept {
-    rotateLeft(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitReset2() noexcept {
-    branchOnBitReset(2);
-}
-
-void Cpu::branchIfResultMinus() noexcept {
-    const bool negative = processorStatus & 0x80;
-    branchIf(negative);
-}
-
-void Cpu::andWithZeroPageIndirectWithY() noexcept {
-    andA(&Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::andWithZeroPageIndirect() noexcept {
-    andA(&Cpu::zeroPageIndirect);
-}
-
-void Cpu::bitTestWithZeroPageWithX() noexcept {
-    bitTest(&Cpu::zeroPageWithX);
-}
-
-void Cpu::andWithZeroPageWithX() noexcept {
-    andA(&Cpu::zeroPageWithX);
-}
-
-void Cpu::rotateLeftZeroPageWithX() noexcept {
-    rotateLeft(&Cpu::zeroPageWithX);
-}
-
-void Cpu::resetMemoryBit3() noexcept {
-    resetMemoryBit(3);
-}
-
-void Cpu::setCarry() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus |= 0x1;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::andWithAbsoluteWithY() noexcept {
-    andA(&Cpu::absoluteWithY);
-}
-
-void Cpu::decrementA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            --A;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::bitTestWithAbsoluteWithX() noexcept {
-    bitTest(&Cpu::absoluteWithX);
-}
-
-void Cpu::andWithAbsoluteWithX() noexcept {
-    andA(&Cpu::absoluteWithX);
-}
-
-void Cpu::rotateLeftAbsoluteWithX() noexcept {
-    rotateLeft(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitReset3() noexcept {
-    branchOnBitReset(3);
-}
-
-void Cpu::returnFromInterrupt() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-            return;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        processorStatus = dataBuffer;
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 5) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorWithZeroPageWithXIndirect() noexcept {
-    xorA(&Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::xorZeroPage() noexcept {
-    xorA(&Cpu::zeroPage);
-}
-
-void Cpu::shiftRightZeroPage() noexcept {
-    shiftRight(&Cpu::zeroPage);
-}
-
-void Cpu::resetMemoryBit4() noexcept {
-    resetMemoryBit(4);
-}
-
-void Cpu::pushA() noexcept {
-    if (TCU == 1) {
-        addressBuffer = 0x100 + stackPointer;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            push(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        A ^= dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::shiftRightA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            if ([[maybe_unused]] bool carry = A & 1) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            A = A >> 1;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::jumpAbsolute() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorWithAbsolute() noexcept {
-    xorA(&Cpu::absolute);
-}
-
-void Cpu::shiftRightAbsolute() noexcept {
-    shiftRight(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitReset4() noexcept {
-    branchOnBitReset(4);
-}
-
-void Cpu::branchIfOverflowClear() noexcept {
-    const bool overflow = processorStatus & 0x40;
-    branchIf(!overflow);
-}
-
-void Cpu::xorWithZeroPageIndirectWithY() noexcept {
-    xorA(&Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::xorWithZeroPageIndirect() noexcept {
-    xorA(&Cpu::zeroPageIndirect);
-}
-
-void Cpu::xorWithZeroPageWithX() noexcept {
-    xorA(&Cpu::zeroPageWithX);
-}
-
-void Cpu::shiftRightZeroPageWithX() noexcept {
-    shiftRight(&Cpu::zeroPageWithX);
-}
-
-void Cpu::resetMemoryBit5() noexcept {
-    resetMemoryBit(5);
-}
-
-void Cpu::clearInterruptDisableFlag() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus &= 0b1111'1011;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorWithAbsoluteWithY() noexcept {
-    xorA(&Cpu::absoluteWithY);
-}
-
-void Cpu::pushY() noexcept {
-    if (TCU == 1) {
-        addressBuffer = 0x100 + stackPointer;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            push(Y);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::xorWithAbsoluteWithX() noexcept {
-    xorA(&Cpu::absoluteWithX);
-}
-
-void Cpu::shiftRightAbsoluteWithX() noexcept {
-    shiftRight(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitReset5() noexcept {
-    branchOnBitReset(5);
-}
-
-void Cpu::returnFromSubroutine() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-            return;
-        }
-        return;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow + 1;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::addWithZeroPageWithXIndirect() noexcept {
-    addWithCarry(&Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::store0AtZeroPage() noexcept {
-    store(0, &Cpu::zeroPage);
-}
-
-void Cpu::addWithZeroPage() noexcept {
-    addWithCarry(&Cpu::zeroPage);
-}
-
-void Cpu::rotateRightZeroPage() noexcept {
-    rotateRight(&Cpu::zeroPage);
-}
-
-void Cpu::resetMemoryBit6() noexcept {
-    resetMemoryBit(6);
-}
-
-void Cpu::pullA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        A = dataBuffer;
-        negativeZeroCheck(A);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::addWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::rotateRightA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            const bool rememberCarry = processorStatus & 1;
-            if (A & 1) {
-                processorStatus |= 1;
-            }
-            else {
-                processorStatus &= 0b1111'1110;
-            }
-            A = A >> 1;
-            if (rememberCarry) {
-                A |= 0x80;
-            }
-            negativeZeroCheck(A);
-            return;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::jumpAbsoluteIndirect() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        ++programCounter;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        ++programCounter;
-        return;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            ++addressBuffer;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::addWithAbsolute() noexcept {
-    addWithCarry(&Cpu::absolute);
-}
-
-void Cpu::rotateRightAbsolute() noexcept {
-    rotateRight(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitReset6() noexcept {
-    branchOnBitReset(6);
-}
-
-void Cpu::branchIfOverflowSet() noexcept {
-    bool overflow = processorStatus & 0x40;
-    branchIf(overflow);
-}
-
-void Cpu::addWithZeroPageIndirectWithY() noexcept {
-    addWithCarry(&Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::addWithZeroPageIndirect() noexcept {
-    addWithCarry(&Cpu::zeroPageIndirect);
-}
-
-void Cpu::store0AtZeroPageWithX() noexcept {
-    store(0, &Cpu::zeroPageWithX);
-}
-
-void Cpu::addWithZeroPageWithX() noexcept {
-    addWithCarry(&Cpu::zeroPageWithX);
-}
-
-void Cpu::rotateRightZeroPageWithX() noexcept {
-    rotateRight(&Cpu::zeroPageWithX);
-}
-
-void Cpu::resetMemoryBit7() noexcept {
-    resetMemoryBit(7);
-}
-
-void Cpu::setInterruptDisable() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus |= 0b0000'0100;
-        }
-    }
-    fetch();
-}
-
-void Cpu::addWithAbsoluteWithY() noexcept {
-    addWithCarry(&Cpu::absoluteWithY);
-}
-
-void Cpu::pullY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        Y = dataBuffer;
-        negativeZeroCheck(Y);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::jumpAbsoluteWithXIndirect() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        return;
-    }
-    if (TCU == 3) {
-        if (!PHI2) {
-            addressBuffer = 0x100 * instructionBufferHigh + instructionBufferLow;
-        }
-        return;
-    }
-    if (TCU == 4) {
-        if (!PHI2) {
-            addressBuffer += X;
-            return;
-        }
-        instructionBufferLow = dataBuffer;
-        return;
-    }
-    if (TCU == 5) {
-        if (!PHI2) {
-            ++addressBuffer;
-            return;
-        }
-        instructionBufferHigh = dataBuffer;
-        programCounter = 0x100 * instructionBufferHigh + instructionBufferLow;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::addWithAbsoluteWithX() noexcept {
-    addWithCarry(&Cpu::absoluteWithX);
-}
-
-void Cpu::rotateRightAbsoluteWithX() noexcept {
-    rotateRight(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitReset7() noexcept {
-    branchOnBitReset(7);
-}
-
-void Cpu::branchAlways() noexcept {
-    branchIf(true);
-}
-
-void Cpu::storeAAtZeroPageWithXIndirect() noexcept {
-    store(A, &Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::storeYAtZeroPage() noexcept {
-    store(Y, &Cpu::zeroPage);
-}
-
-void Cpu::storeAAtZeroPage() noexcept {
-    store(A, &Cpu::zeroPage);
-}
-
-void Cpu::storeXAtZeroPage() noexcept {
-    store(X, &Cpu::zeroPage);
-}
-
-void Cpu::setMemoryBit0() noexcept {
-    setMemoryBit(0);
-}
-
-void Cpu::decrementY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            --Y;
-            negativeZeroCheck(Y);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::bitTestWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        ALUFunctions::bitTest(A, dataBuffer, processorStatus);
-    }
-    fetch();
-}
-
-void Cpu::transferXtoA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            A = X;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::storeYAtAbsolute() noexcept {
-    store(Y, &Cpu::absolute);
-}
-
-void Cpu::storeAAtAbsolute() noexcept {
-    store(A, &Cpu::absolute);
-}
-
-void Cpu::storeXAtAbsolute() noexcept {
-    store(X, &Cpu::absolute);
-}
-
-void Cpu::branchOnBitSet0() noexcept {
-    branchOnBitSet(0);
-}
-
-void Cpu::branchIfCarryClear() noexcept {
-    bool carry = processorStatus & 1;
-    branchIf(!carry);
-}
-
-void Cpu::storeAAtZeroPageIndirectWithY() noexcept {
-    store(A, &Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::storeAAtZeroPageIndirect() noexcept {
-    store(A, &Cpu::zeroPageIndirect);
-}
-
-void Cpu::storeYAtZeroPageWithX() noexcept {
-    store(Y, &Cpu::zeroPageWithX);
-}
-
-void Cpu::storeAAtZeroPageWithX() noexcept {
-    store(A, &Cpu::zeroPageWithX);
-}
-
-void Cpu::storeXAtZeroPageWithY() noexcept {
-    store(X, &Cpu::zeroPageWithX);
-}
-
-void Cpu::setMemoryBit1() noexcept {
-    setMemoryBit(1);
-}
-
-void Cpu::transferYToA() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            A = Y;
-            negativeZeroCheck(A);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::storeAAtAbsoluteWithY() noexcept {
-    store(A, &Cpu::absoluteWithY);
-}
-
-void Cpu::transferXToStackpointer() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            stackPointer = X;
-            return;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::store0AtAbsolute() noexcept {
-    store(0, &Cpu::absolute);
-}
-
-void Cpu::storeAAtAbsoluteWithX() noexcept {
-    store(A, &Cpu::absoluteWithX);
-}
-
-void Cpu::store0AtAbsoluteWithX() noexcept {
-    store(0, &Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitSet1() noexcept {
-    branchOnBitSet(1);
-}
-
-void Cpu::loadYImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        Y = dataBuffer;
-        negativeZeroCheck(Y);
-        ++programCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadAZeroPageWithXIndirect() noexcept {
-    load(A, &Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::loadXImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        X = dataBuffer;
-        negativeZeroCheck(X);
-        ++programCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadYZeroPage() noexcept {
-    load(Y, &Cpu::zeroPage);
-}
-
-void Cpu::loadAZeroPage() noexcept {
-    load(A, &Cpu::zeroPage);
-}
-
-void Cpu::loadXZeroPage() noexcept {
-    load(X, &Cpu::zeroPage);
-}
-
-void Cpu::setMemoryBit2() noexcept {
-    setMemoryBit(2);
-}
-
-void Cpu::transferAToY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            Y = A;
-            negativeZeroCheck(Y);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadAImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            return;
-        }
-        A = dataBuffer;
-        negativeZeroCheck(A);
-        ++programCounter;
-        return;
-    }
-    fetch();
-}
-
-void Cpu::transferAToX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            X = A;
-            negativeZeroCheck(X);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadYAbsolute() noexcept {
-    load(Y, &Cpu::absolute);
-}
-
-void Cpu::loadAAbsolute() noexcept {
-    load(A, &Cpu::absolute);
-}
-
-void Cpu::loadXAbsolute() noexcept {
-    load(X, &Cpu::absolute);
-}
-
-void Cpu::branchOnBitSet2() noexcept {
-    branchOnBitSet(2);
-}
-
-void Cpu::branchIfCarrySet() noexcept {
-    bool carry = processorStatus & 1;
-    branchIf(carry);
-}
-
-void Cpu::loadAZeroPageIndirectWithY() noexcept {
-    load(A, &Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::loadAZeroPageIndirect() noexcept {
-    load(A, &Cpu::zeroPageIndirect);
-}
-
-void Cpu::loadYZeroPageWithX() noexcept {
-    load(Y, &Cpu::zeroPageWithX);
-}
-
-void Cpu::loadAZeroPageWithX() noexcept {
-    load(A, &Cpu::zeroPageWithX);
-}
-
-void Cpu::loadXZeroPageWithY() noexcept {
-    load(X, &Cpu::zeroPageWithY);
-}
-
-void Cpu::setMemoryBit3() noexcept {
-    setMemoryBit(3);
-}
-
-void Cpu::clearOverflow() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus &= 0b1111'1110;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadAAbsoluteWithY() noexcept {
-    load(A, &Cpu::absoluteWithY);
-}
-
-void Cpu::transferStackpointerToX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            X = stackPointer;
-            negativeZeroCheck(X);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::loadYAbsoluteWithX() noexcept {
-    load(Y, &Cpu::absoluteWithX);
-}
-
-void Cpu::loadAAbsoluteWithX() noexcept {
-    load(A, &Cpu::absoluteWithX);
-}
-
-void Cpu::loadXAbsoluteWithY() noexcept {
-    load(X, &Cpu::absoluteWithY);
-}
-
-void Cpu::branchOnBitSet3() noexcept {
-    branchOnBitSet(3);
-}
-
-void Cpu::compareYWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        ALUFunctions::compare(Y, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::compareAWithZeroPageWithXIndirect() noexcept {
-    compare(A, &Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::compareYWithZeroPage() noexcept {
-    compare(Y, &Cpu::zeroPage);
-}
-
-void Cpu::compareAWithZeroPage() noexcept {
-    compare(A, &Cpu::zeroPage);
-}
-
-void Cpu::decrementZeroPage() noexcept {
-    decrement(&Cpu::zeroPage);
-}
-
-void Cpu::setMemoryBit4() noexcept {
-    setMemoryBit(4);
-}
-
-void Cpu::incrementY() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            ++Y;
-            negativeZeroCheck(Y);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::compareAWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        ALUFunctions::compare(A, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::decrementX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            --X;
-            negativeZeroCheck(X);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::waitForInterrupt() noexcept {
-    // Documentation confusing
-    if (!PHI2) {
-        if (interruptDemanded) {
-            TCU = 0;
-            handleNonMaskableInterrupt();
-            return;
-        }
-        if (interruptRequested) {
-            TCU = 0;
-            handleInterruptRequest();
-            return;
-        }
-    }
-    TCU = 1;
-}
-
-void Cpu::compareYWithAbsolute() noexcept {
-    compare(Y, &Cpu::absolute);
-}
-
-void Cpu::compareAWithAbsolute() noexcept {
-    compare(A, &Cpu::absolute);
-}
-
-void Cpu::decrementAbsolute() noexcept {
-    decrement(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitSet4() noexcept {
-    branchOnBitSet(4);
-}
-
-void Cpu::branchNotEqual() noexcept {
-    const bool equal = processorStatus & 2; // zero flag
-    branchIf(!equal);
-}
-
-void Cpu::compareAWithZeroPageIndirectWithY() noexcept {
-    compare(A, &Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::compareAWithZeroPageIndirect() noexcept {
-    compare(A, &Cpu::zeroPageIndirect);
-}
-
-void Cpu::compareAWithZeroPageWithX() noexcept {
-    compare(A, &Cpu::zeroPageWithX);
-}
-
-void Cpu::decrementZeroPageWithX() noexcept {
-    decrement(&Cpu::zeroPageWithX);
-}
-
-void Cpu::setMemoryBit5() noexcept {
-    setMemoryBit(5);
-}
-
-void Cpu::clearDecimalMode() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus &= 0b1111'0111;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::compareAWithAbsoluteWithY() noexcept {
-    compare(A, &Cpu::absoluteWithY);
-}
-
-void Cpu::pushX() noexcept {
-    if (TCU == 1) {
-        addressBuffer = 0x100 + stackPointer;
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            push(X);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::stopMode() noexcept {
-    // does nothing, stays this way until reset
-}
-
-void Cpu::compareAWithAbsoluteWithX() noexcept {
-    compare(A, &Cpu::absoluteWithX);
-}
-
-void Cpu::decrementAbsoluteWithX() noexcept {
-    decrement(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitSet5() noexcept {
-    branchOnBitSet(5);
-}
-
-void Cpu::compareXWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        ALUFunctions::compare(X, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::subtractWithZeroPageWithXIndirect() noexcept {
-    subtractWithCarry(&Cpu::zeroPageWithXIndirect);
-}
-
-void Cpu::compareXWithZeroPage() noexcept {
-    compare(X, &Cpu::zeroPage);
-}
-
-void Cpu::subtractWithZeroPage() noexcept {
-    subtractWithCarry(&Cpu::zeroPage);
-}
-
-void Cpu::incrementZeroPage() noexcept {
-    increment(&Cpu::zeroPage);
-}
-
-void Cpu::setMemoryBit6() noexcept {
-    setMemoryBit(6);
-}
-
-void Cpu::incrementX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            ++X;
-            negativeZeroCheck(X);
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::subtractWithImmediate() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = programCounter;
-            ++programCounter;
-            return;
-        }
-        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::noop() noexcept {
-    if (TCU == 1) {
-        return;
-    }
-    fetch();
-}
-
-void Cpu::compareXWithAbsolute() noexcept {
-    compare(X, &Cpu::absolute);
-}
-
-void Cpu::subtractWithAbsolute() noexcept {
-    subtractWithCarry(&Cpu::absolute);
-}
-
-void Cpu::incrementAbsolute() noexcept {
-    increment(&Cpu::absolute);
-}
-
-void Cpu::branchOnBitSet6() noexcept {
-    branchOnBitSet(6);
-}
-
-void Cpu::branchIfEqual() noexcept {
-    bool equal = processorStatus & 2; // zero flag
-    branchIf(equal);
-}
-
-void Cpu::subtractWithZeroPageIndirectWithY() noexcept {
-    subtractWithCarry(&Cpu::zeroPageIndirectWithY);
-}
-
-void Cpu::subtractWithZeroPageIndirect() noexcept {
-    subtractWithCarry(&Cpu::zeroPageIndirect);
-}
-
-void Cpu::subtractWithZeroPageWithX() noexcept {
-    subtractWithCarry(&Cpu::zeroPageWithX);
-}
-
-void Cpu::incrementZeroPageWithX() noexcept {
-    increment(&Cpu::zeroPageWithX);
-}
-
-void Cpu::setMemoryBit7() noexcept {
-    setMemoryBit(7);
-}
-
-void Cpu::setDecimalMode() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            processorStatus |= 0b0000'1000;
-        }
-        return;
-    }
-    fetch();
-}
-
-void Cpu::subtractWithAbsoluteWithY() noexcept {
-    subtractWithCarry(&Cpu::absoluteWithY);
-}
-
-void Cpu::pullX() noexcept {
-    if (TCU == 1) {
-        if (!PHI2) {
-            addressBuffer = 0x100 + stackPointer;
-        }
-        return;
-    }
-    if (TCU == 2) {
-        if (!PHI2) {
-            pull();
-            return;
-        }
-        X = dataBuffer;
-        negativeZeroCheck(X);
-        return;
-    }
-    fetch();
-}
-
-void Cpu::subtractWithAbsoluteWithX() noexcept {
-    subtractWithCarry(&Cpu::absoluteWithX);
-}
-
-void Cpu::incrementAbsoluteWithX() noexcept {
-    increment(&Cpu::absoluteWithX);
-}
-
-void Cpu::branchOnBitSet7() noexcept {
-    branchOnBitSet(7);
-}
-
-Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB,
-    const bool& _NMIB,
-    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O,
-    const bool& _RESB) noexcept : data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB},
-    NMIB{_NMIB},
-    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O},
-    PHI2O{_PHI2O}, RESB{_RESB} { }
-
-void Cpu::cycle() noexcept {
-    if (RESB) {
-        lastRESB = true;
-    }
-    if (BE && readWriteBuffer) {
-        dataBuffer = data;
-    }
-    if (!PHI2 && !RDY) {
-        toBus();
-        return;
-    }
-    PHI1O = !PHI2;
-    PHI2O = PHI2;
-    if (!(IRQB || (processorStatus & 0x4))) {
-        interruptRequested = true;
-    }
-    if (!NMIB && NMIB_Before) {
-        interruptDemanded = true;
-    }
-    NMIB_Before = NMIB;
-    if (lastClockState == PHI2) {
-        toBus();
-        return;
-    }
-    if (!PHI2 && !RESB) {
-        if (!lastRESB) {
-            reset();
-            return;
-        }
-        lastRESB = false;
-    }
-    lastClockState = PHI2;
-    if (resetTimer) {
-        interruptRequested = false;
-        interruptDemanded = false;
-        if (!PHI2) {
-            readWriteBuffer = true;
-            --resetTimer;
-            if (resetTimer == 0) {
-                programCounter = 0xFFFC;
-                TCU = 0;
-                addressBuffer = programCounter;
-                IR = 0x4C;
-            }
-            toBus();
-        }
-        return;
-    }
-    if (!PHI2) {
-        ++TCU;
-    }
-    if (followingRequest) {
-        handleInterruptRequest();
-        toBus();
-        return;
-    }
-    if (followingOrder) {
-        handleNonMaskableInterrupt();
-        toBus();
-        return;
-    }
-    if (TCU == 0) {
-        toBus();
-        return;
-    }
+void Cpu::chooseInstruction() noexcept {
     switch (IR) {
     case 0x00:
         breakRequest();
@@ -3263,6 +796,2395 @@ void Cpu::cycle() noexcept {
         noop();
         break;
     }
+}
+
+
+void Cpu::addWithCarry(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::subtractWithCarry(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::orA(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        A = ALUFunctions::orOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::andA(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        A = ALUFunctions::andOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorA(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        A = ALUFunctions::xorOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::load(unsigned char& cpuRegister, bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ++writeBackCounter;
+        cpuRegister = dataBuffer;
+        ALUFunctions::negativeZeroCheck(cpuRegister, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::store(const unsigned char value, bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            dataBuffer = value;
+            readWriteBuffer = false;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ALUFunctions::bitTest(A, processorStatus, dataBuffer);
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        ALUFunctions::compare(first, dataBuffer, processorStatus);
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::testAndSetMemoryBit(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            if ((A & instructionBufferLow) == 0) {
+                processorStatus |= 2;
+            }
+            else {
+                processorStatus &= 0b1111'1101;
+            }
+            instructionBufferLow |= A;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::testAndResetMemoryBit(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            if ((A & instructionBufferLow) == 0) {
+                processorStatus |= 2;
+            }
+            else {
+                processorStatus &= 0b1111'1101;
+            }
+            instructionBufferLow &= ~A;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::rotateRight(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::rotateRight(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::rotateLeft(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::rotateLeft(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::shiftRight(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::shiftRight(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::shiftLeft(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::shiftLeft(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::increment(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::increment(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::decrement(bool (Cpu::* address)()) noexcept {
+    if (!std::invoke(address, *this)) {
+        return;
+    }
+    if (writeBackCounter == 0) {
+        if (!PHI2) {
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 1) {
+        if (!PHI2) {
+            instructionBufferLow = ALUFunctions::decrement(instructionBufferLow, processorStatus);
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    if (writeBackCounter == 2) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+            return;
+        }
+        ++writeBackCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
+    if (TCU >= 2) {
+        zeroPage();
+        if (TCU == 2 && PHI2) {
+            instructionBufferLow = dataBuffer;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        unsigned char thisBit = 1 << bitId;
+        thisBit = ~thisBit;
+        instructionBufferLow &= thisBit;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
+    if (TCU >= 2) {
+        zeroPage();
+        if (TCU == 2 && PHI2) {
+            instructionBufferLow = dataBuffer;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        const unsigned char thisBit = 1 << bitId;
+        instructionBufferLow |= thisBit;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            readWriteBuffer = false;
+            dataBuffer = instructionBufferLow;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
+    if (TCU <= 2) {
+        zeroPage();
+        if (TCU == 2 && PHI2) {
+            instructionBufferHigh = dataBuffer;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 5) {
+        unsigned char thisBit = 1 << bitId;
+        bool condition = thisBit & instructionBufferHigh;
+        if (!condition) {
+            if (!PHI2) {
+                programCounter += instructionBufferLow;
+            }
+            return;
+        }
+    }
+    fetch();
+}
+
+void Cpu::branchOnBitSet(const unsigned char bitId) noexcept {
+    if (TCU <= 2) {
+        zeroPage();
+        if (TCU == 2 && PHI2) {
+            instructionBufferHigh = dataBuffer;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 5) {
+        if (const unsigned char thisBit = 1 << bitId; thisBit & instructionBufferHigh) {
+            if (!PHI2) {
+                programCounter += instructionBufferLow;
+            }
+            return;
+        }
+    }
+    fetch();
+}
+
+void Cpu::branchIf(const bool condition) noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 2) {
+        if (condition) {
+            if (!PHI2) {
+                programCounter += instructionBufferLow;
+                if (instructionBufferLow & 0xf0) {
+                    programCounter -= 256;
+                }
+            }
+            return;
+        }
+    }
+    fetch();
+}
+
+void Cpu::push(const unsigned char data) noexcept {
+    addressBuffer = 0x100 + stackPointer;
+    readWriteBuffer = false;
+    dataBuffer = data;
+    --stackPointer;
+}
+
+void Cpu::pull() noexcept {
+    ++stackPointer;
+    addressBuffer = 0x100 + stackPointer;
+}
+
+bool Cpu::zeroPage() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::zeroPageIndirect() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            ++addressBuffer;
+            addressBuffer %= 256;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        return false;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::zeroPageWithXIndirect() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            instructionBufferLow += X;
+        }
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        return false;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            ++addressBuffer;
+            addressBuffer %= 256;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        return false;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::zeroPageIndirectWithY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            ++addressBuffer;
+            addressBuffer %= 256;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        return false;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + Y;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::zeroPageWithX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            instructionBufferLow += X;
+        }
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::zeroPageWithY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            instructionBufferLow += Y;
+        }
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::absoluteIndirect() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        return false;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            ++addressBuffer;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        return false;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::absolute() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::absoluteWithX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + X;
+            return true;
+        }
+    }
+    return true;
+}
+
+bool Cpu::absoluteWithY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return false;
+        }
+        instructionBufferHigh = dataBuffer;
+        ++programCounter;
+        return false;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow + Y;
+            return true;
+        }
+    }
+    return true;
+}
+
+void Cpu::breakRequest() noexcept {
+    throw std::runtime_error("no break");
+}
+
+void Cpu::orWithZeroPageWithXIndirect() noexcept {
+    orA(&Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::testAndSetMemoryBitZeroPage() noexcept {
+    testAndSetMemoryBit(&Cpu::zeroPage);
+}
+
+void Cpu::orWithZeroPage() noexcept {
+    orA(&Cpu::zeroPage);
+}
+
+
+void Cpu::shiftLeftZeroPage() noexcept {
+    shiftLeft(&Cpu::zeroPage);
+}
+
+void Cpu::resetMemoryBit0() noexcept {
+    resetMemoryBit(0);
+}
+
+void Cpu::pushProcessorStatus() noexcept {
+    if (TCU == 1) {
+        addressBuffer = 0x100 + stackPointer;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            push(processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::orWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        A = ALUFunctions::orOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::shiftLeftA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            if ([[maybe_unused]] bool carry = A & 0x80) {
+                processorStatus |= 1;
+            }
+            else {
+                processorStatus &= 0b1111'1110;
+            }
+            A = ALUFunctions::shiftLeft(A, processorStatus);
+            return;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::testAndSetMemoryBitAbsolute() noexcept {
+    testAndSetMemoryBit(&Cpu::absolute);
+}
+
+void Cpu::orWithAbsolute() noexcept {
+    orA(&Cpu::absolute);
+}
+
+void Cpu::shiftLeftAbsolute() noexcept {
+    shiftLeft(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitReset0() noexcept {
+    branchOnBitReset(0);
+}
+
+void Cpu::branchIfResultPlus() noexcept {
+    bool negative = processorStatus & 0x80;
+    branchIf(!negative);
+}
+
+void Cpu::orWithZeroPageIndirectWithY() noexcept {
+    orA(&Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::orWithZeroPageIndirect() noexcept {
+    orA(&Cpu::zeroPageIndirect);
+}
+
+void Cpu::testAndResetMemoryBitZeroPage() noexcept {
+    testAndResetMemoryBit(&Cpu::zeroPage);
+}
+
+void Cpu::orWithZeroPageWithX() noexcept {
+    orA(&Cpu::zeroPageWithX);
+}
+
+void Cpu::shiftLeftZeroPageWithX() noexcept {
+    shiftLeft(&Cpu::zeroPageWithX);
+}
+
+void Cpu::resetMemoryBit1() noexcept {
+    resetMemoryBit(1);
+}
+
+void Cpu::clearCarry() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus &= 0b1111'1110;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::orWithAbsoluteWithY() noexcept {
+    orA(&Cpu::absoluteWithY);
+}
+
+void Cpu::incrementA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = ALUFunctions::increment(A, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::testAndResetMemoryBitAbsolute() noexcept {
+    testAndResetMemoryBit(&Cpu::absolute);
+}
+
+void Cpu::orWithAbsoluteWithX() noexcept {
+    orA(&Cpu::absoluteWithX);
+}
+
+void Cpu::shiftLeftAbsoluteWithX() noexcept {
+    shiftLeft(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitReset1() noexcept {
+    branchOnBitReset(1);
+}
+
+void Cpu::jumpToSubroutine() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+            return;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            push(programCounter >> 8);
+            return;
+        }
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            push(programCounter & 0xff);
+            return;
+        }
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            readWriteBuffer = true;
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::andWithZeroPageWithXIndirect() noexcept {
+    andA(&Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::bitTestWithZeroPage() noexcept {
+    bitTest(&Cpu::zeroPage);
+}
+
+void Cpu::andWithZeroPage() noexcept {
+    andA(&Cpu::zeroPage);
+}
+
+void Cpu::rotateLeftZeroPage() noexcept {
+    rotateLeft(&Cpu::zeroPage);
+}
+
+void Cpu::resetMemoryBit2() noexcept {
+    resetMemoryBit(2);
+}
+
+void Cpu::pullProcessorStatus() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        processorStatus = dataBuffer;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::andWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        A = ALUFunctions::andOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::rotateLeftA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = ALUFunctions::rotateLeft(A, processorStatus);
+            return;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::bitTestWithAbsolute() noexcept {
+    bitTest(&Cpu::absolute);
+}
+
+void Cpu::andWithAbsolute() noexcept {
+    andA(&Cpu::absolute);
+}
+
+void Cpu::rotateLeftAbsolute() noexcept {
+    rotateLeft(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitReset2() noexcept {
+    branchOnBitReset(2);
+}
+
+void Cpu::branchIfResultMinus() noexcept {
+    const bool negative = processorStatus & 0x80;
+    branchIf(negative);
+}
+
+void Cpu::andWithZeroPageIndirectWithY() noexcept {
+    andA(&Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::andWithZeroPageIndirect() noexcept {
+    andA(&Cpu::zeroPageIndirect);
+}
+
+void Cpu::bitTestWithZeroPageWithX() noexcept {
+    bitTest(&Cpu::zeroPageWithX);
+}
+
+void Cpu::andWithZeroPageWithX() noexcept {
+    andA(&Cpu::zeroPageWithX);
+}
+
+void Cpu::rotateLeftZeroPageWithX() noexcept {
+    rotateLeft(&Cpu::zeroPageWithX);
+}
+
+void Cpu::resetMemoryBit3() noexcept {
+    resetMemoryBit(3);
+}
+
+void Cpu::setCarry() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus |= 0x1;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::andWithAbsoluteWithY() noexcept {
+    andA(&Cpu::absoluteWithY);
+}
+
+void Cpu::decrementA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = ALUFunctions::decrement(A, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::bitTestWithAbsoluteWithX() noexcept {
+    bitTest(&Cpu::absoluteWithX);
+}
+
+void Cpu::andWithAbsoluteWithX() noexcept {
+    andA(&Cpu::absoluteWithX);
+}
+
+void Cpu::rotateLeftAbsoluteWithX() noexcept {
+    rotateLeft(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitReset3() noexcept {
+    branchOnBitReset(3);
+}
+
+void Cpu::returnFromInterrupt() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+            return;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        processorStatus = dataBuffer;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorWithZeroPageWithXIndirect() noexcept {
+    xorA(&Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::xorZeroPage() noexcept {
+    xorA(&Cpu::zeroPage);
+}
+
+void Cpu::shiftRightZeroPage() noexcept {
+    shiftRight(&Cpu::zeroPage);
+}
+
+void Cpu::resetMemoryBit4() noexcept {
+    resetMemoryBit(4);
+}
+
+void Cpu::pushA() noexcept {
+    if (TCU == 1) {
+        addressBuffer = 0x100 + stackPointer;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            push(A);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        A = ALUFunctions::xorOperation(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::shiftRightA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = ALUFunctions::shiftRight(A, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::jumpAbsolute() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorWithAbsolute() noexcept {
+    xorA(&Cpu::absolute);
+}
+
+void Cpu::shiftRightAbsolute() noexcept {
+    shiftRight(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitReset4() noexcept {
+    branchOnBitReset(4);
+}
+
+void Cpu::branchIfOverflowClear() noexcept {
+    const bool overflow = processorStatus & 0x40;
+    branchIf(!overflow);
+}
+
+void Cpu::xorWithZeroPageIndirectWithY() noexcept {
+    xorA(&Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::xorWithZeroPageIndirect() noexcept {
+    xorA(&Cpu::zeroPageIndirect);
+}
+
+void Cpu::xorWithZeroPageWithX() noexcept {
+    xorA(&Cpu::zeroPageWithX);
+}
+
+void Cpu::shiftRightZeroPageWithX() noexcept {
+    shiftRight(&Cpu::zeroPageWithX);
+}
+
+void Cpu::resetMemoryBit5() noexcept {
+    resetMemoryBit(5);
+}
+
+void Cpu::clearInterruptDisableFlag() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus &= 0b1111'1011;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorWithAbsoluteWithY() noexcept {
+    xorA(&Cpu::absoluteWithY);
+}
+
+void Cpu::pushY() noexcept {
+    if (TCU == 1) {
+        addressBuffer = 0x100 + stackPointer;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            push(Y);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::xorWithAbsoluteWithX() noexcept {
+    xorA(&Cpu::absoluteWithX);
+}
+
+void Cpu::shiftRightAbsoluteWithX() noexcept {
+    shiftRight(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitReset5() noexcept {
+    branchOnBitReset(5);
+}
+
+void Cpu::returnFromSubroutine() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+            return;
+        }
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow + 1;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::addWithZeroPageWithXIndirect() noexcept {
+    addWithCarry(&Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::store0AtZeroPage() noexcept {
+    store(0, &Cpu::zeroPage);
+}
+
+void Cpu::addWithZeroPage() noexcept {
+    addWithCarry(&Cpu::zeroPage);
+}
+
+void Cpu::rotateRightZeroPage() noexcept {
+    rotateRight(&Cpu::zeroPage);
+}
+
+void Cpu::resetMemoryBit6() noexcept {
+    resetMemoryBit(6);
+}
+
+void Cpu::pullA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        A = dataBuffer;
+        ALUFunctions::negativeZeroCheck(A, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::addWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        A = ALUFunctions::addWithCarry(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::rotateRightA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            const bool rememberCarry = processorStatus & 1;
+            if (A & 1) {
+                processorStatus |= 1;
+            }
+            else {
+                processorStatus &= 0b1111'1110;
+            }
+            A = A >> 1;
+            if (rememberCarry) {
+                A |= 0x80;
+            }
+            ALUFunctions::negativeZeroCheck(A, processorStatus);
+            return;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::jumpAbsoluteIndirect() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        ++programCounter;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        ++programCounter;
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = instructionBufferHigh * 0x100 + instructionBufferLow;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            ++addressBuffer;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = instructionBufferHigh * 0x100 + instructionBufferLow;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::addWithAbsolute() noexcept {
+    addWithCarry(&Cpu::absolute);
+}
+
+void Cpu::rotateRightAbsolute() noexcept {
+    rotateRight(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitReset6() noexcept {
+    branchOnBitReset(6);
+}
+
+void Cpu::branchIfOverflowSet() noexcept {
+    bool overflow = processorStatus & 0x40;
+    branchIf(overflow);
+}
+
+void Cpu::addWithZeroPageIndirectWithY() noexcept {
+    addWithCarry(&Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::addWithZeroPageIndirect() noexcept {
+    addWithCarry(&Cpu::zeroPageIndirect);
+}
+
+void Cpu::store0AtZeroPageWithX() noexcept {
+    store(0, &Cpu::zeroPageWithX);
+}
+
+void Cpu::addWithZeroPageWithX() noexcept {
+    addWithCarry(&Cpu::zeroPageWithX);
+}
+
+void Cpu::rotateRightZeroPageWithX() noexcept {
+    rotateRight(&Cpu::zeroPageWithX);
+}
+
+void Cpu::resetMemoryBit7() noexcept {
+    resetMemoryBit(7);
+}
+
+void Cpu::setInterruptDisable() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus |= 0b0000'0100;
+        }
+    }
+    fetch();
+}
+
+void Cpu::addWithAbsoluteWithY() noexcept {
+    addWithCarry(&Cpu::absoluteWithY);
+}
+
+void Cpu::pullY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        Y = dataBuffer;
+        ALUFunctions::negativeZeroCheck(Y, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::jumpAbsoluteWithXIndirect() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        return;
+    }
+    if (TCU == 3) {
+        if (!PHI2) {
+            addressBuffer = 0x100 * instructionBufferHigh + instructionBufferLow;
+        }
+        return;
+    }
+    if (TCU == 4) {
+        if (!PHI2) {
+            addressBuffer += X;
+            return;
+        }
+        instructionBufferLow = dataBuffer;
+        return;
+    }
+    if (TCU == 5) {
+        if (!PHI2) {
+            ++addressBuffer;
+            return;
+        }
+        instructionBufferHigh = dataBuffer;
+        programCounter = 0x100 * instructionBufferHigh + instructionBufferLow;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::addWithAbsoluteWithX() noexcept {
+    addWithCarry(&Cpu::absoluteWithX);
+}
+
+void Cpu::rotateRightAbsoluteWithX() noexcept {
+    rotateRight(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitReset7() noexcept {
+    branchOnBitReset(7);
+}
+
+void Cpu::branchAlways() noexcept {
+    branchIf(true);
+}
+
+void Cpu::storeAAtZeroPageWithXIndirect() noexcept {
+    store(A, &Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::storeYAtZeroPage() noexcept {
+    store(Y, &Cpu::zeroPage);
+}
+
+void Cpu::storeAAtZeroPage() noexcept {
+    store(A, &Cpu::zeroPage);
+}
+
+void Cpu::storeXAtZeroPage() noexcept {
+    store(X, &Cpu::zeroPage);
+}
+
+void Cpu::setMemoryBit0() noexcept {
+    setMemoryBit(0);
+}
+
+void Cpu::decrementY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            Y = ALUFunctions::decrement(Y, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::bitTestWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        ALUFunctions::bitTest(A, dataBuffer, processorStatus);
+    }
+    fetch();
+}
+
+void Cpu::transferXtoA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = X;
+            ALUFunctions::negativeZeroCheck(A, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::storeYAtAbsolute() noexcept {
+    store(Y, &Cpu::absolute);
+}
+
+void Cpu::storeAAtAbsolute() noexcept {
+    store(A, &Cpu::absolute);
+}
+
+void Cpu::storeXAtAbsolute() noexcept {
+    store(X, &Cpu::absolute);
+}
+
+void Cpu::branchOnBitSet0() noexcept {
+    branchOnBitSet(0);
+}
+
+void Cpu::branchIfCarryClear() noexcept {
+    bool carry = processorStatus & 1;
+    branchIf(!carry);
+}
+
+void Cpu::storeAAtZeroPageIndirectWithY() noexcept {
+    store(A, &Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::storeAAtZeroPageIndirect() noexcept {
+    store(A, &Cpu::zeroPageIndirect);
+}
+
+void Cpu::storeYAtZeroPageWithX() noexcept {
+    store(Y, &Cpu::zeroPageWithX);
+}
+
+void Cpu::storeAAtZeroPageWithX() noexcept {
+    store(A, &Cpu::zeroPageWithX);
+}
+
+void Cpu::storeXAtZeroPageWithY() noexcept {
+    store(X, &Cpu::zeroPageWithX);
+}
+
+void Cpu::setMemoryBit1() noexcept {
+    setMemoryBit(1);
+}
+
+void Cpu::transferYToA() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            A = Y;
+            ALUFunctions::negativeZeroCheck(A, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::storeAAtAbsoluteWithY() noexcept {
+    store(A, &Cpu::absoluteWithY);
+}
+
+void Cpu::transferXToStackpointer() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            stackPointer = X;
+            return;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::store0AtAbsolute() noexcept {
+    store(0, &Cpu::absolute);
+}
+
+void Cpu::storeAAtAbsoluteWithX() noexcept {
+    store(A, &Cpu::absoluteWithX);
+}
+
+void Cpu::store0AtAbsoluteWithX() noexcept {
+    store(0, &Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitSet1() noexcept {
+    branchOnBitSet(1);
+}
+
+void Cpu::loadYImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        Y = dataBuffer;
+        ALUFunctions::negativeZeroCheck(Y, processorStatus);
+        ++programCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadAZeroPageWithXIndirect() noexcept {
+    load(A, &Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::loadXImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        X = dataBuffer;
+        ALUFunctions::negativeZeroCheck(X, processorStatus);
+        ++programCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadYZeroPage() noexcept {
+    load(Y, &Cpu::zeroPage);
+}
+
+void Cpu::loadAZeroPage() noexcept {
+    load(A, &Cpu::zeroPage);
+}
+
+void Cpu::loadXZeroPage() noexcept {
+    load(X, &Cpu::zeroPage);
+}
+
+void Cpu::setMemoryBit2() noexcept {
+    setMemoryBit(2);
+}
+
+void Cpu::transferAToY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            Y = A;
+            ALUFunctions::negativeZeroCheck(Y, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadAImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            return;
+        }
+        A = dataBuffer;
+        ALUFunctions::negativeZeroCheck(A, processorStatus);
+        ++programCounter;
+        return;
+    }
+    fetch();
+}
+
+void Cpu::transferAToX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            X = A;
+            ALUFunctions::negativeZeroCheck(X, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadYAbsolute() noexcept {
+    load(Y, &Cpu::absolute);
+}
+
+void Cpu::loadAAbsolute() noexcept {
+    load(A, &Cpu::absolute);
+}
+
+void Cpu::loadXAbsolute() noexcept {
+    load(X, &Cpu::absolute);
+}
+
+void Cpu::branchOnBitSet2() noexcept {
+    branchOnBitSet(2);
+}
+
+void Cpu::branchIfCarrySet() noexcept {
+    bool carry = processorStatus & 1;
+    branchIf(carry);
+}
+
+void Cpu::loadAZeroPageIndirectWithY() noexcept {
+    load(A, &Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::loadAZeroPageIndirect() noexcept {
+    load(A, &Cpu::zeroPageIndirect);
+}
+
+void Cpu::loadYZeroPageWithX() noexcept {
+    load(Y, &Cpu::zeroPageWithX);
+}
+
+void Cpu::loadAZeroPageWithX() noexcept {
+    load(A, &Cpu::zeroPageWithX);
+}
+
+void Cpu::loadXZeroPageWithY() noexcept {
+    load(X, &Cpu::zeroPageWithY);
+}
+
+void Cpu::setMemoryBit3() noexcept {
+    setMemoryBit(3);
+}
+
+void Cpu::clearOverflow() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus &= 0b1111'1110;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadAAbsoluteWithY() noexcept {
+    load(A, &Cpu::absoluteWithY);
+}
+
+void Cpu::transferStackpointerToX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            X = stackPointer;
+            ALUFunctions::negativeZeroCheck(X, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::loadYAbsoluteWithX() noexcept {
+    load(Y, &Cpu::absoluteWithX);
+}
+
+void Cpu::loadAAbsoluteWithX() noexcept {
+    load(A, &Cpu::absoluteWithX);
+}
+
+void Cpu::loadXAbsoluteWithY() noexcept {
+    load(X, &Cpu::absoluteWithY);
+}
+
+void Cpu::branchOnBitSet3() noexcept {
+    branchOnBitSet(3);
+}
+
+void Cpu::compareYWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        ALUFunctions::compare(Y, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::compareAWithZeroPageWithXIndirect() noexcept {
+    compare(A, &Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::compareYWithZeroPage() noexcept {
+    compare(Y, &Cpu::zeroPage);
+}
+
+void Cpu::compareAWithZeroPage() noexcept {
+    compare(A, &Cpu::zeroPage);
+}
+
+void Cpu::decrementZeroPage() noexcept {
+    decrement(&Cpu::zeroPage);
+}
+
+void Cpu::setMemoryBit4() noexcept {
+    setMemoryBit(4);
+}
+
+void Cpu::incrementY() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            Y = ALUFunctions::increment(Y, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::compareAWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        ALUFunctions::compare(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::decrementX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            X = ALUFunctions::decrement(X, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::waitForInterrupt() noexcept {
+    // Documentation confusing
+    if (!PHI2) {
+        if (interruptDemanded) {
+            TCU = 0;
+            handleNonMaskableInterrupt();
+            return;
+        }
+        if (interruptRequested) {
+            TCU = 0;
+            handleInterruptRequest();
+            return;
+        }
+    }
+    TCU = 1;
+}
+
+void Cpu::compareYWithAbsolute() noexcept {
+    compare(Y, &Cpu::absolute);
+}
+
+void Cpu::compareAWithAbsolute() noexcept {
+    compare(A, &Cpu::absolute);
+}
+
+void Cpu::decrementAbsolute() noexcept {
+    decrement(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitSet4() noexcept {
+    branchOnBitSet(4);
+}
+
+void Cpu::branchNotEqual() noexcept {
+    const bool equal = processorStatus & 2; // zero flag
+    branchIf(!equal);
+}
+
+void Cpu::compareAWithZeroPageIndirectWithY() noexcept {
+    compare(A, &Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::compareAWithZeroPageIndirect() noexcept {
+    compare(A, &Cpu::zeroPageIndirect);
+}
+
+void Cpu::compareAWithZeroPageWithX() noexcept {
+    compare(A, &Cpu::zeroPageWithX);
+}
+
+void Cpu::decrementZeroPageWithX() noexcept {
+    decrement(&Cpu::zeroPageWithX);
+}
+
+void Cpu::setMemoryBit5() noexcept {
+    setMemoryBit(5);
+}
+
+void Cpu::clearDecimalMode() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus &= 0b1111'0111;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::compareAWithAbsoluteWithY() noexcept {
+    compare(A, &Cpu::absoluteWithY);
+}
+
+void Cpu::pushX() noexcept {
+    if (TCU == 1) {
+        addressBuffer = 0x100 + stackPointer;
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            push(X);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::stopMode() noexcept {
+    // does nothing, stays this way until reset
+}
+
+void Cpu::compareAWithAbsoluteWithX() noexcept {
+    compare(A, &Cpu::absoluteWithX);
+}
+
+void Cpu::decrementAbsoluteWithX() noexcept {
+    decrement(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitSet5() noexcept {
+    branchOnBitSet(5);
+}
+
+void Cpu::compareXWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        ALUFunctions::compare(X, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::subtractWithZeroPageWithXIndirect() noexcept {
+    subtractWithCarry(&Cpu::zeroPageWithXIndirect);
+}
+
+void Cpu::compareXWithZeroPage() noexcept {
+    compare(X, &Cpu::zeroPage);
+}
+
+void Cpu::subtractWithZeroPage() noexcept {
+    subtractWithCarry(&Cpu::zeroPage);
+}
+
+void Cpu::incrementZeroPage() noexcept {
+    increment(&Cpu::zeroPage);
+}
+
+void Cpu::setMemoryBit6() noexcept {
+    setMemoryBit(6);
+}
+
+void Cpu::incrementX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            X = ALUFunctions::increment(X, processorStatus);
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::subtractWithImmediate() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = programCounter;
+            ++programCounter;
+            return;
+        }
+        A = ALUFunctions::subtractWithCarry(A, dataBuffer, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::noop() noexcept {
+    if (TCU == 1) {
+        return;
+    }
+    fetch();
+}
+
+void Cpu::compareXWithAbsolute() noexcept {
+    compare(X, &Cpu::absolute);
+}
+
+void Cpu::subtractWithAbsolute() noexcept {
+    subtractWithCarry(&Cpu::absolute);
+}
+
+void Cpu::incrementAbsolute() noexcept {
+    increment(&Cpu::absolute);
+}
+
+void Cpu::branchOnBitSet6() noexcept {
+    branchOnBitSet(6);
+}
+
+void Cpu::branchIfEqual() noexcept {
+    bool equal = processorStatus & 2; // zero flag
+    branchIf(equal);
+}
+
+void Cpu::subtractWithZeroPageIndirectWithY() noexcept {
+    subtractWithCarry(&Cpu::zeroPageIndirectWithY);
+}
+
+void Cpu::subtractWithZeroPageIndirect() noexcept {
+    subtractWithCarry(&Cpu::zeroPageIndirect);
+}
+
+void Cpu::subtractWithZeroPageWithX() noexcept {
+    subtractWithCarry(&Cpu::zeroPageWithX);
+}
+
+void Cpu::incrementZeroPageWithX() noexcept {
+    increment(&Cpu::zeroPageWithX);
+}
+
+void Cpu::setMemoryBit7() noexcept {
+    setMemoryBit(7);
+}
+
+void Cpu::setDecimalMode() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            processorStatus |= 0b0000'1000;
+        }
+        return;
+    }
+    fetch();
+}
+
+void Cpu::subtractWithAbsoluteWithY() noexcept {
+    subtractWithCarry(&Cpu::absoluteWithY);
+}
+
+void Cpu::pullX() noexcept {
+    if (TCU == 1) {
+        if (!PHI2) {
+            addressBuffer = 0x100 + stackPointer;
+        }
+        return;
+    }
+    if (TCU == 2) {
+        if (!PHI2) {
+            pull();
+            return;
+        }
+        X = dataBuffer;
+        ALUFunctions::negativeZeroCheck(X, processorStatus);
+        return;
+    }
+    fetch();
+}
+
+void Cpu::subtractWithAbsoluteWithX() noexcept {
+    subtractWithCarry(&Cpu::absoluteWithX);
+}
+
+void Cpu::incrementAbsoluteWithX() noexcept {
+    increment(&Cpu::absoluteWithX);
+}
+
+void Cpu::branchOnBitSet7() noexcept {
+    branchOnBitSet(7);
+}
+
+Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB,
+    const bool& _NMIB,
+    bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O,
+    const bool& _RESB) noexcept : data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB},
+    NMIB{_NMIB},
+    SYNC{_SYNC}, RWB{_RWB}, BE{_BE}, SOB{_SOB}, PHI2{_PHI2}, PHI1O{_PHI1O},
+    PHI2O{_PHI2O}, RESB{_RESB} { }
+
+void Cpu::cycle() noexcept {
+    if (RESB) {
+        lastRESB = true;
+    }
+    if (BE && readWriteBuffer) {
+        dataBuffer = data;
+    }
+    if (!PHI2 && !RDY) {
+        toBus();
+        return;
+    }
+    PHI1O = !PHI2;
+    PHI2O = PHI2;
+    if (!(IRQB || (processorStatus & 0x4))) {
+        interruptRequested = true;
+    }
+    if (!NMIB && NMIB_Before) {
+        interruptDemanded = true;
+    }
+    NMIB_Before = NMIB;
+    if (lastClockState == PHI2) {
+        toBus();
+        return;
+    }
+    if (!PHI2 && !RESB) {
+        if (!lastRESB) {
+            reset();
+            return;
+        }
+        lastRESB = false;
+    }
+    lastClockState = PHI2;
+    if (resetTimer) {
+        interruptRequested = false;
+        interruptDemanded = false;
+        if (!PHI2) {
+            readWriteBuffer = true;
+            --resetTimer;
+            if (resetTimer == 0) {
+                programCounter = 0xFFFC;
+                TCU = 0;
+                addressBuffer = programCounter;
+                IR = 0x4C;
+            }
+            toBus();
+        }
+        return;
+    }
+    if (!PHI2) {
+        ++TCU;
+    }
+    if (followingRequest) {
+        handleInterruptRequest();
+        toBus();
+        return;
+    }
+    if (followingOrder) {
+        handleNonMaskableInterrupt();
+        toBus();
+        return;
+    }
+    if (TCU == 0) {
+        toBus();
+        return;
+    }
+    chooseInstruction();
     toBus();
 }
 

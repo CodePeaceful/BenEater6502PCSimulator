@@ -54,7 +54,7 @@ private:
     void toBus() const noexcept;
     void handleInterruptRequest()noexcept;
     void handleNonMaskableInterrupt()noexcept;
-    void negativeZeroCheck(unsigned char value)noexcept;
+    void chooseInstruction()noexcept;
 
     // executions
     void addWithCarry(bool(Cpu::* address)())noexcept;
@@ -132,7 +132,7 @@ private:
     void rotateLeftZeroPage()noexcept;          // 0x26
     void resetMemoryBit2()noexcept;             // 0x27
     void pullProcessorStatus()noexcept;         // 0x28
-    void andWithImmediate()noexcept;             // 0x29
+    void andWithImmediate()noexcept;            // 0x29
     void rotateLeftA()noexcept;                 // 0x2a
     void bitTestWithAbsolute()noexcept;         // 0x2c
     void andWithAbsolute()noexcept;             // 0x2d
@@ -152,13 +152,13 @@ private:
     void andWithAbsoluteWithX()noexcept;        // 0x3d
     void rotateLeftAbsoluteWithX()noexcept;     // 0x3e
     void branchOnBitReset3()noexcept;           // 0x3f
-    void returnFromInterrupt()noexcept;          // 0x40
+    void returnFromInterrupt()noexcept;         // 0x40
     void xorWithZeroPageWithXIndirect()noexcept;// 0x41
     void xorZeroPage()noexcept;                 // 0x45
     void shiftRightZeroPage()noexcept;          // 0x46
     void resetMemoryBit4()noexcept;             // 0x47
     void pushA()noexcept;                       // 0x48
-    void xorImmediate()noexcept;                 // 0x49
+    void xorImmediate()noexcept;                // 0x49
     void shiftRightA()noexcept;                 // 0x4a
     void jumpAbsolute()noexcept;                // 0x4c
     void xorWithAbsolute()noexcept;             // 0x4d
@@ -170,7 +170,7 @@ private:
     void xorWithZeroPageWithX()noexcept;        // 0x55
     void shiftRightZeroPageWithX()noexcept;     // 0x56
     void resetMemoryBit5()noexcept;             // 0x57
-    void clearInterruptDisableFlag()noexcept;    // 0x58
+    void clearInterruptDisableFlag()noexcept;   // 0x58
     void xorWithAbsoluteWithY()noexcept;        // 0x59
     void pushY()noexcept;                       // 0x5a
     void xorWithAbsoluteWithX()noexcept;        // 0x5d
@@ -183,7 +183,7 @@ private:
     void rotateRightZeroPage()noexcept;         // 0x66
     void resetMemoryBit6()noexcept;             // 0x67
     void pullA()noexcept;                       // 0x68
-    void addWithImmediate()noexcept;             // 0x69
+    void addWithImmediate()noexcept;            // 0x69
     void rotateRightA()noexcept;                // 0x6a
     void jumpAbsoluteIndirect()noexcept;        // 0x6c
     void addWithAbsolute()noexcept;             // 0x6d
@@ -196,7 +196,7 @@ private:
     void addWithZeroPageWithX()noexcept;        // 0x75
     void rotateRightZeroPageWithX()noexcept;    // 0x76
     void resetMemoryBit7()noexcept;             // 0x77
-    void setInterruptDisable()noexcept;          // 0x78
+    void setInterruptDisable()noexcept;         // 0x78
     void addWithAbsoluteWithY()noexcept;        // 0x79
     void pullY()noexcept;                       // 0x7a
     void jumpAbsoluteWithXIndirect()noexcept;   // 0x7c
@@ -210,7 +210,7 @@ private:
     void storeXAtZeroPage()noexcept;            // 0x86
     void setMemoryBit0()noexcept;               // 0x87
     void decrementY()noexcept;                  // 0x88
-    void bitTestWithImmediate()noexcept;         // 0x89
+    void bitTestWithImmediate()noexcept;        // 0x89
     void transferXtoA()noexcept;                // 0x8a
     void storeYAtAbsolute()noexcept;            // 0x8c
     void storeAAtAbsolute()noexcept;            // 0x8d
@@ -230,15 +230,15 @@ private:
     void storeAAtAbsoluteWithX()noexcept;       // 0x9d
     void store0AtAbsoluteWithX()noexcept;       // 0x9e
     void branchOnBitSet1()noexcept;             // 0x9f
-    void loadYImmediate()noexcept;               // 0xa0
+    void loadYImmediate()noexcept;              // 0xa0
     void loadAZeroPageWithXIndirect()noexcept;  // 0xa1
-    void loadXImmediate()noexcept;               // 0xa2
+    void loadXImmediate()noexcept;              // 0xa2
     void loadYZeroPage()noexcept;               // 0xa4
     void loadAZeroPage()noexcept;               // 0xa5
     void loadXZeroPage()noexcept;               // 0xa6
     void setMemoryBit2()noexcept;               // 0xa7
     void transferAToY()noexcept;                // 0xa8
-    void loadAImmediate()noexcept;               // 0xa9
+    void loadAImmediate()noexcept;              // 0xa9
     void transferAToX()noexcept;                // 0xaa
     void loadYAbsolute()noexcept;               // 0xac
     void loadAAbsolute()noexcept;               // 0xad
@@ -258,16 +258,16 @@ private:
     void loadAAbsoluteWithX()noexcept;          // 0xbd
     void loadXAbsoluteWithY()noexcept;          // 0xbe
     void branchOnBitSet3()noexcept;             // 0xbf
-    void compareYWithImmediate()noexcept;        // 0xc0
+    void compareYWithImmediate()noexcept;       // 0xc0
     void compareAWithZeroPageWithXIndirect()noexcept;//0xc1
     void compareYWithZeroPage()noexcept;        // 0xc4
     void compareAWithZeroPage()noexcept;        // 0xc5
     void decrementZeroPage()noexcept;           // 0xc6
     void setMemoryBit4()noexcept;               // 0xc7
     void incrementY()noexcept;                  // 0xc8
-    void compareAWithImmediate()noexcept;        // 0xc9
+    void compareAWithImmediate()noexcept;       // 0xc9
     void decrementX()noexcept;                  // 0xca
-    void waitForInterrupt()noexcept;             // 0xcb
+    void waitForInterrupt()noexcept;            // 0xcb
     void compareYWithAbsolute()noexcept;        // 0xcc
     void compareAWithAbsolute()noexcept;        // 0xcd
     void decrementAbsolute()noexcept;           // 0xce
@@ -285,14 +285,14 @@ private:
     void compareAWithAbsoluteWithX()noexcept;   // 0xdd
     void decrementAbsoluteWithX()noexcept;      // 0xde
     void branchOnBitSet5()noexcept;             // 0xdf
-    void compareXWithImmediate()noexcept;        // 0xe0
+    void compareXWithImmediate()noexcept;       // 0xe0
     void subtractWithZeroPageWithXIndirect()noexcept;//0xe1
     void compareXWithZeroPage()noexcept;        // 0xe4
     void subtractWithZeroPage()noexcept;        // 0xe5
     void incrementZeroPage()noexcept;           // 0xe6
     void setMemoryBit6()noexcept;               // 0xe7
     void incrementX()noexcept;                  // 0xe8
-    void subtractWithImmediate()noexcept;        // 0xe9
+    void subtractWithImmediate()noexcept;       // 0xe9
     void noop()noexcept;                        // 0xea
     void compareXWithAbsolute()noexcept;        // 0xec
     void subtractWithAbsolute()noexcept;        // 0xed
