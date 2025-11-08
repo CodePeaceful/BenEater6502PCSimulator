@@ -17,9 +17,9 @@ screen{viaPortB, e, rw, rs} {
 }
 
 void Computer::reprogram(const fs::path& binary32k) {
-    std::array<unsigned char, 0x8000> binary{};
+    std::array<uint8_t, 0x8000> binary{ };
     std::ifstream input(binary32k, std::ios::binary);
-    std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(input), { });
+    std::vector<uint8_t> buffer(std::istreambuf_iterator<char>(input), { });
     if (binary.size() != buffer.size()) {
         throw std::runtime_error("binary size wrong");
     }

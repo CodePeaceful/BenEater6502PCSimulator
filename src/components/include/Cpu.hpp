@@ -1,12 +1,14 @@
 #pragma once
 
+#include <cstdint>
+
 /// Cpu has no decimal mode(ignored flag) or break instruction(terminate) rdy is not pulled low on wait or stop
 class Cpu final
 {
 private:
     // pin references
-    unsigned char& data; // D7 - D0
-    unsigned short& address; // A15 - A0
+    uint8_t& data; // D7 - D0
+    uint16_t& address; // A15 - A0
     bool& VPB; // Vector Pull
     bool& RDY; // ready: run on high
     const bool& IRQB; // interrupt: on low
@@ -22,17 +24,17 @@ private:
     const bool& RESB;
 
     // internals
-    unsigned short programCounter;
-    unsigned char IR; // instruction register
-    unsigned char TCU; // timing control unit
-    unsigned char A; // A register
-    unsigned char X;
-    unsigned char Y;
-    unsigned char stackPointer;
-    unsigned char processorStatus;
+    uint16_t programCounter;
+    uint8_t IR; // instruction register
+    uint8_t TCU; // timing control unit
+    uint8_t A; // A register
+    uint8_t X;
+    uint8_t Y;
+    uint8_t stackPointer;
+    uint8_t processorStatus;
 
-    unsigned char dataBuffer;
-    unsigned short addressBuffer;
+    uint8_t dataBuffer;
+    uint16_t addressBuffer;
     bool readWriteBuffer;
     bool lastClockState{true};
 
@@ -44,11 +46,11 @@ private:
     bool followingRequest{false};
     bool followingOrder{false};
     bool lastRESB{false};
-    unsigned char resetTimer;
-    unsigned char instructionBufferLow;
-    unsigned char instructionBufferHigh;
+    uint8_t resetTimer;
+    uint8_t instructionBufferLow;
+    uint8_t instructionBufferHigh;
 
-    unsigned char writeBackCounter;
+    uint8_t writeBackCounter;
 
     void fetch()noexcept;
     void toBus() const noexcept;
@@ -62,10 +64,10 @@ private:
     void orA(bool(Cpu::* address)())noexcept;
     void andA(bool(Cpu::* address)())noexcept;
     void xorA(bool(Cpu::* address)())noexcept;
-    void load(unsigned char& cpuRegister, bool(Cpu::* address)())noexcept;
-    void store(unsigned char value, bool(Cpu::* address)())noexcept;
+    void load(uint8_t& cpuRegister, bool(Cpu::* address)())noexcept;
+    void store(uint8_t value, bool(Cpu::* address)())noexcept;
     void bitTest(bool(Cpu::* address)())noexcept;
-    void compare(unsigned char first, bool(Cpu::* address)())noexcept;
+    void compare(uint8_t first, bool(Cpu::* address)())noexcept;
     void testAndSetMemoryBit(bool(Cpu::* address)())noexcept;
     void testAndResetMemoryBit(bool(Cpu::* address)())noexcept;
     void rotateRight(bool(Cpu::* address)())noexcept;
@@ -75,14 +77,14 @@ private:
     void increment(bool(Cpu::* address)())noexcept;
     void decrement(bool(Cpu::* address)())noexcept;
 
-    void resetMemoryBit(unsigned char bitId)noexcept;
-    void setMemoryBit(unsigned char bitId)noexcept;
-    void branchOnBitReset(unsigned char bitId)noexcept;
-    void branchOnBitSet(unsigned char bitId)noexcept;
+    void resetMemoryBit(uint8_t bitId)noexcept;
+    void setMemoryBit(uint8_t bitId)noexcept;
+    void branchOnBitReset(uint8_t bitId)noexcept;
+    void branchOnBitSet(uint8_t bitId)noexcept;
 
     void branchIf(bool condition)noexcept;
 
-    void push(unsigned char data)noexcept;  // after push cpu is in write mode
+    void push(uint8_t data)noexcept;  // after push cpu is in write mode
     void pull()noexcept;    // to dataBuffer
 
     // addressing
@@ -312,7 +314,7 @@ private:
     void branchOnBitSet7()noexcept;             // 0xff
 
 public:
-    Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
+    Cpu(uint8_t& _data, uint16_t& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB, const bool& _NMIB,
         bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O, const bool& _RESB)noexcept;
     void cycle()noexcept;
     void reset()noexcept;

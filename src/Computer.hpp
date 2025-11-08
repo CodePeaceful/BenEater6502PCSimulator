@@ -12,8 +12,8 @@ class Computer final
 {
 private:
     // CPU Connections
-    unsigned char data{0xEA};
-    unsigned short address{0};
+    uint8_t data{0xEA};
+    uint16_t address{0};
     bool VPB{true}; // Vector Pull
     bool RDY{true}; // ready: run on high
     bool IRQB{true}; // interrupt: on low
@@ -29,10 +29,10 @@ private:
     bool RESB{true};
 
     // modified for rom
-    unsigned short addressModifiedRom{0};
+    uint16_t addressModifiedRom{0};
 
     // modified for ram
-    unsigned short addressModifiedRam{0};
+    uint16_t addressModifiedRam{0};
     bool ramOutputDisable;
 
     // modified Cpu pins for versatile interface adapter
@@ -44,8 +44,8 @@ private:
     bool viaCS2B;
 
     // External pins of versatile interface adapter
-    unsigned char viaPortA{0};
-    unsigned char viaPortB{0};
+    uint8_t viaPortA{0};
+    uint8_t viaPortB{0};
     bool CA1; //??
     bool CA2; //??
     bool CB1; //??

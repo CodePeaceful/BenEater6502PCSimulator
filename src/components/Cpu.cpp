@@ -49,14 +49,14 @@ void Cpu::handleInterruptRequest() noexcept {
     }
     if (TCU == 2) {
         if (!PHI2) {
-            const unsigned char pch = programCounter >> 8;
+            const uint8_t pch = programCounter >> 8;
             push(pch);
         }
         return;
     }
     if (TCU == 3) {
         if (!PHI2) {
-            const unsigned char pcl = programCounter % 256;
+            const uint8_t pcl = programCounter % 256;
             push(pcl);
             return;
         }
@@ -107,14 +107,14 @@ void Cpu::handleNonMaskableInterrupt() noexcept {
     }
     if (TCU == 2) {
         if (!PHI2) {
-            unsigned char pch = programCounter >> 8;
+            uint8_t pch = programCounter >> 8;
             push(pch);
         }
         return;
     }
     if (TCU == 3) {
         if (!PHI2) {
-            unsigned char pcl = programCounter % 256;
+            uint8_t pcl = programCounter % 256;
             push(pcl);
             return;
         }
@@ -874,7 +874,7 @@ void Cpu::xorA(bool (Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::load(unsigned char& cpuRegister, bool (Cpu::* address)()) noexcept {
+void Cpu::load(uint8_t& cpuRegister, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -890,7 +890,7 @@ void Cpu::load(unsigned char& cpuRegister, bool (Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::store(const unsigned char value, bool (Cpu::* address)()) noexcept {
+void Cpu::store(const uint8_t value, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -921,7 +921,7 @@ void Cpu::bitTest(bool (Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::compare(const unsigned char first, bool (Cpu::* address)()) noexcept {
+void Cpu::compare(const uint8_t first, bool (Cpu::* address)()) noexcept {
     if (!std::invoke(address, *this)) {
         return;
     }
@@ -1204,7 +1204,7 @@ void Cpu::decrement(bool (Cpu::* address)()) noexcept {
     fetch();
 }
 
-void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
+void Cpu::resetMemoryBit(const uint8_t bitId) noexcept {
     if (TCU >= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -1213,7 +1213,7 @@ void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 3) {
-        unsigned char thisBit = 1 << bitId;
+        uint8_t thisBit = 1 << bitId;
         thisBit = ~thisBit;
         instructionBufferLow &= thisBit;
         return;
@@ -1228,7 +1228,7 @@ void Cpu::resetMemoryBit(const unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
+void Cpu::setMemoryBit(const uint8_t bitId) noexcept {
     if (TCU >= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -1237,7 +1237,7 @@ void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 3) {
-        const unsigned char thisBit = 1 << bitId;
+        const uint8_t thisBit = 1 << bitId;
         instructionBufferLow |= thisBit;
         return;
     }
@@ -1251,7 +1251,7 @@ void Cpu::setMemoryBit(const unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
+void Cpu::branchOnBitReset(const uint8_t bitId) noexcept {
     if (TCU <= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -1272,7 +1272,7 @@ void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 5) {
-        unsigned char thisBit = 1 << bitId;
+        uint8_t thisBit = 1 << bitId;
         bool condition = thisBit & instructionBufferHigh;
         if (!condition) {
             if (!PHI2) {
@@ -1284,7 +1284,7 @@ void Cpu::branchOnBitReset(const unsigned char bitId) noexcept {
     fetch();
 }
 
-void Cpu::branchOnBitSet(const unsigned char bitId) noexcept {
+void Cpu::branchOnBitSet(const uint8_t bitId) noexcept {
     if (TCU <= 2) {
         zeroPage();
         if (TCU == 2 && PHI2) {
@@ -1305,7 +1305,7 @@ void Cpu::branchOnBitSet(const unsigned char bitId) noexcept {
         return;
     }
     if (TCU == 5) {
-        if (const unsigned char thisBit = 1 << bitId; thisBit & instructionBufferHigh) {
+        if (const uint8_t thisBit = 1 << bitId; thisBit & instructionBufferHigh) {
             if (!PHI2) {
                 programCounter += instructionBufferLow;
             }
@@ -1339,7 +1339,7 @@ void Cpu::branchIf(const bool condition) noexcept {
     fetch();
 }
 
-void Cpu::push(const unsigned char data) noexcept {
+void Cpu::push(const uint8_t data) noexcept {
     addressBuffer = 0x100 + stackPointer;
     readWriteBuffer = false;
     dataBuffer = data;
@@ -3111,7 +3111,7 @@ void Cpu::branchOnBitSet7() noexcept {
     branchOnBitSet(7);
 }
 
-Cpu::Cpu(unsigned char& _data, unsigned short& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB,
+Cpu::Cpu(uint8_t& _data, uint16_t& _address, bool& _VPB, bool& _RDY, const bool& _IRQB, bool& _MLB,
     const bool& _NMIB,
     bool& _SYNC, bool& _RWB, const bool& _BE, const bool& _SOB, const bool& _PHI2, bool& _PHI1O, bool& _PHI2O,
     const bool& _RESB) noexcept : data{_data}, address{_address}, VPB{_VPB}, RDY{_RDY}, IRQB{_IRQB}, MLB{_MLB},

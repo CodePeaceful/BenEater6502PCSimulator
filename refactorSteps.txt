@@ -23,12 +23,12 @@ hardware needs 2 low and 2 high cycles per clock cycle so any configuration work
             to keep it working
             - after controlls are set
                 - 2 subcycles data will be read
-                - 1 subcycle data will be written and kept for an extra subcycle
+                - 1 subcycle data will be written and kept for 1 extra subcycle after controlls are changed
 
         - ROM
             to keep it working
             - after controlls are set
-                - 1 subcycle data will be written and kept for an extra subcycle
+                - 1 subcycle data will be written and kept for 1 extra subcycle after controlls are changed
 
         - Screen 
             all timings are milliseconds independent of clock
