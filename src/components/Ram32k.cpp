@@ -1,16 +1,32 @@
 #include "Ram32k.hpp"
 
-Ram32k::Ram32k(const uint16_t& _addressAndChipSelect, uint8_t& _data, const bool& _OE, const bool& _WE) :
-    addressAndChipSelect{_addressAndChipSelect}, data{_data}, OE{_OE}, WE{_WE} { }
+Ram32k::Ram32k(const uint16_t& _addressAndChipSelect, uint8_t& _data, const bool& _OE, const bool& _WE, const bool& _CS) :
+    addressPins{_addressAndChipSelect}, data{_data}, OE{_OE}, WE{_WE}, CS{_CS} { }
 
 void Ram32k::cycle() {
-    if (addressAndChipSelect & 0x8000) {
-        return;
+    uint16_t address = addressPins & 0x7FFF; // mask A14 - A0
+    if (!CSbefore && (!CS || inOperation)) {
+        if (!WE && !WEbefore) {
+            // Write operation
+            dataStore[address] = data;
+            inOperation = true;
+        }
+        else if ((!OE || inOperation) && !OEbefore && (WE || inOperation) && WEbefore) {
+            // Read operation
+            data = dataStore[address];
+            if (!OE && WE) {
+                inOperation = true;
+            }
+        }
+        else {
+            inOperation = false;
+        }
     }
-    if (!WE) {
-        dataStore[addressAndChipSelect] = data;
+    else {
+        inOperation = false;
     }
-    if (WE && !OE) {
-        data = dataStore[addressAndChipSelect];
-    }
+    addressBefore = address;
+    OEbefore = OE;
+    WEbefore = WE;
+    CSbefore = CS;
 }

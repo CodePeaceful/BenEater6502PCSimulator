@@ -1816,6 +1816,7 @@ void Cpu::branchOnBitReset1() noexcept {
     branchOnBitReset(1);
 }
 
+// after reading the first address byte the return address is on the stack and then the second address byte is read
 void Cpu::jumpToSubroutine() noexcept {
     if (TCU == 1) {
         if (!PHI2) {

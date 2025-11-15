@@ -19,13 +19,13 @@ hardware needs 2 low and 2 high cycles per clock cycle so any configuration work
             - data will be written at high 1 but heald until the end of high 2
             other timings to be determined at implementation of feature
 
-        - RAM
+        - RAM DONE
             to keep it working
             - after controlls are set
                 - 2 subcycles data will be read
                 - 1 subcycle data will be written and kept for 1 extra subcycle after controlls are changed
 
-        - ROM
+        - ROM DONE
             to keep it working
             - after controlls are set
                 - 1 subcycle data will be written and kept for 1 extra subcycle after controlls are changed

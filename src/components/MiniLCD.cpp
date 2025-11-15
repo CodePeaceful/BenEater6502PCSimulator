@@ -236,7 +236,7 @@ void MiniLCD::updateDisplay() {
     curser.setFillColor(sf::Color(0, 0, 0, 0));
 }
 
-MiniLCD::MiniLCD(unsigned char& _data, const bool& _E, const bool& _RW, const bool& _RS) : data{_data}, E{_E}, RW{_RW}, RS{_RS} {
+MiniLCD::MiniLCD(uint8_t& _data, const bool& _E, const bool& _RW, const bool& _RS) : data{_data}, E{_E}, RW{_RW}, RS{_RS} {
     texture = sf::Texture("resources/HD44780_5x8Symbols.png");
     background.setSize(sf::Vector2f(256, 42));
     background.setFillColor(sf::Color::Green);
