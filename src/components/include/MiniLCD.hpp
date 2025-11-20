@@ -3,10 +3,11 @@
 #include <vector>
 #include <ranges>
 #include <cstdint>
+#include <chrono>
 
 #include <SFML/Graphics.hpp>
 
-/// busy expects the lcd to be updated twice per cycle of 1MHz
+/// busy uses chrono timer asuming 270khz clock
 /// four bit mode or any non screen equivalent mode throws exception
 class MiniLCD final
 {
@@ -44,7 +45,10 @@ private:
     bool cgRam;
     bool done;
 
-    uint16_t busyCounter{0};
+    // Timing
+    bool busy{false};
+    std::chrono::time_point<std::chrono::high_resolution_clock> busyEndTime;
+
 
     void cycleCommand();
     void cycleData();

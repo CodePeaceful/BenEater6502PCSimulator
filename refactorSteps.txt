@@ -10,7 +10,7 @@ hardware needs 2 low and 2 high cycles per clock cycle so any configuration work
             - IRQB NMIB RDY RESB will be checked during high 2
             - BE effects in next subcycle
 
-        - VersatileInterfaceAdapter
+        - VersatileInterfaceAdapter DONE
             - all controll pins are checked at high 1
             - peripherals are checked and buffered at low 2
             - after write peripherals will be set at next low 2
@@ -30,7 +30,7 @@ hardware needs 2 low and 2 high cycles per clock cycle so any configuration work
             - after controlls are set
                 - 1 subcycle data will be written and kept for 1 extra subcycle after controlls are changed
 
-        - Screen 
+        - Screen DONE
             all timings are milliseconds independent of clock
 
 cpu class is bloated and untestable, needs functions to be extracted

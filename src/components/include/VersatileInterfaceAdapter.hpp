@@ -26,9 +26,12 @@ private:
     // internals
     uint8_t portADataDirection; // PA7 - PA0
     uint8_t portBDataDirection; // PB7 - PB0
-    uint8_t portARegister; // PA7 - PA0
-    uint8_t portBRegister; // PB7 - PB0
+    uint8_t portAInputRegister; // PA7 - PA0
+    uint8_t portAOutputRegister;// PA7 - PA0
+    uint8_t portBInputRegister; // PB7 - PB0
+    uint8_t portBOutputRegister;// PB7 - PB0
     uint8_t peripheralControlRegister;
+    uint8_t auxiliaryControlRegister;
     uint8_t interruptFlagRegister; // IRQ Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
     uint8_t interruptEnableRegister; // SetClear Timer1 Timer2 CB1 CB2 ShiftRegister CA1 CA2
 
@@ -40,6 +43,7 @@ private:
 
     // helpers
     bool lastClockState{true};
+    uint8_t address; // internal address bus for register selection
 
     void registerOperation()noexcept;
 

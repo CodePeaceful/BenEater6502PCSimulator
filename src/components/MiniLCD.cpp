@@ -2,14 +2,14 @@
 
 #include <algorithm>
 #include <bit>
-#include <chrono>
+
+using namespace std::literals::chrono_literals;
 
 void MiniLCD::cycleCommand() {
     if (RW) {
         if (eightBit) {
             data = addressCounter;
-            if (busyCounter) {
-                --busyCounter;
+            if (busy) {
                 data |= 0x80;
             }
             return;
@@ -17,8 +17,8 @@ void MiniLCD::cycleCommand() {
         throw std::runtime_error("4 bit mode not implemented");
         return;
     }
-    if (busyCounter) {
-        ++busyCounter;
+    if (busy) {
+        busyEndTime += 20us; // extend busy time exact value not known
         return;
     }
     if (eightBit) {
@@ -30,7 +30,7 @@ void MiniLCD::cycleCommand() {
             curserCell = 0;
             curserLine1 = true;
             // not in data sheet
-            busyCounter = 1024;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 1520us;
             return;
         case 2:
             cgRam = false;
@@ -38,26 +38,26 @@ void MiniLCD::cycleCommand() {
             curserCell = 0;
             curserLine1 = true;
             shiftPos = 0;
-            busyCounter = 3040;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 1520us;
             return;
         case 3:
             cgRam = false;
             moveRight = data & 0b00000010;
             doShift = data & 0b00000001;
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         case 4:
             cgRam = false;
             screenOn = data & 0b0000100;
             curserOn = data & 0b00000010;
             curserBlink = data & 0b00000001;
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         case 5:
             cgRam = false;
             doShift = data & 0b0001000;
             moveRight = data & 0b00000100;
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         case 6:
             eightBit = data & 0b00010000;
@@ -67,12 +67,12 @@ void MiniLCD::cycleCommand() {
             /*if (data & 0b00000100) {
                 throw std::runtime_error("5by8 only");
             }*/
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         case 7:
             addressCounter = data & 0b00111111;
             cgRam = true;
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         case 8:
             addressCounter = data & 0b01111111;
@@ -85,7 +85,7 @@ void MiniLCD::cycleCommand() {
                 shiftPos = addressCounter - 0x40;
             }
             cgRam = false;
-            busyCounter = 74;
+            busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
             return;
         default:
             return;
@@ -98,11 +98,11 @@ void MiniLCD::cycleData() {
     if (!eightBit) {
         throw std::runtime_error("4 bit mode not implemented");
     }
-    if (busyCounter) {
-        ++busyCounter;
+    if (busy) {
+        busyEndTime += 20us; // extend busy time exact value not known
         return;
     }
-    busyCounter = 74;
+    busyEndTime = std::chrono::high_resolution_clock::now() + 37us;
     if (RW) {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
@@ -271,8 +271,7 @@ void MiniLCD::move(sf::Vector2f vec) {
 }
 
 void MiniLCD::cycle() {
-    if (busyCounter)
-        --busyCounter;
+    busy = busyEndTime > std::chrono::high_resolution_clock::now();
     if (!E) {
         done = false;
         return;

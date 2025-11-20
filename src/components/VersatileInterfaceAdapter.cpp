@@ -1,184 +1,166 @@
 #include "VersatileInterfaceAdapter.hpp"
 
-#include "stdexcept"
+#include <stdexcept>
+#include <utility>
 
 void VersatileInterfaceAdapter::registerOperation() noexcept {
-    if (RS0) {
-        if (RS1) {
-            if (RS2) {
-                if (RS3) {
-                    // IO A no "Handshake"
-                    // TODO: 
-                    return;
+    if (!lastClockState && PHI2) {
+        // rising edge
+        address = (RS3 << 3) | (RS2 << 2) | (RS1 << 1) | RS0;
+    }
+    switch (address) {
+    case 0:
+        // IO B
+        interruptFlagRegister &= 0b11101111;
+        if (peripheralControlRegister & 0x20) {
+            interruptFlagRegister &= 0b11110111;
+        }
+        if (RWB) {
+            if (!PHI2) {
+                portBInputRegister = portB;
+                // happens any way
+                dataPins = portBInputRegister;
+                if (auxiliaryControlRegister & 0x2) {
+                    // empty
                 }
-                // T1 High-Order Latches
-                // TODO: 
-                return;
-            }
-            if (RS3) {
-                // Auxiliary Control Register
-                // TODO: 
-                return;
-            }
-            // Data Direction A
-            if (RWB) {
-                if (!PHI2)
-                    dataPins = portADataDirection;
-                return;
-            }
-            if (PHI2)
-                portADataDirection = dataPins;
-            return;
-        }
-        if (RS2) {
-            if (RS3) {
-                // Interrupt Flag Register
-                if (RWB) {
-                    if (!PHI2)
-                        dataPins = interruptFlagRegister;
-                    return;
+                else {
+                    for (uint8_t i = 1; i != 0; i = i << 1) {
+                        if (i & portBDataDirection) {
+                            // empty 
+                        }
+                        else {
+                            if (i & portBInputRegister) {
+                                dataPins |= i;
+                            }
+                            else {
+                                dataPins &= ~i;
+                            }
+                        }
+                    }
                 }
-                if (PHI2)
-                    interruptFlagRegister = dataPins;
-                return;
             }
-            // T1 High-Order Counter
-            // TODO: 
             return;
         }
-        if (RS3) {
-            // T2 High - Order Counter
-            // TODO: 
-            return;
+        if (PHI2 && lastClockState) {
+            portBOutputRegister = dataPins;
+
         }
+        return;
+    case 1:
         // IO A
         interruptFlagRegister &= 0b11111101;
         if (peripheralControlRegister & 0x2) {
             interruptFlagRegister &= 0b11111110;
         }
         if (RWB) {
-            if (!PHI2) {
-                portARegister = portA;
-                for (uint8_t i = 1; i != 0; i = i << 1) {
-                    if (i & portADataDirection) {
-                        // empty
-                    }
-                    else {
-                        if (i & portARegister) {
-                            dataPins |= i;
-                        }
-                        else {
-                            dataPins &= ~i;
-                        }
-                    }
+            if (PHI2) {
+                if (auxiliaryControlRegister & 0x1) {
+                    dataPins = portAInputRegister;
                 }
-            }
-            return;
-        }
-        if (PHI2) {
-            portARegister = dataPins;
-            for (uint8_t i = 1; i != 0; i = i << 1) {
-                if (i & portADataDirection) {
-                    if (i & portARegister) {
-                        portA |= i;
-                    }
-                    else {
-                        portA &= ~i;
-                    }
+                else {
+                    dataPins = portA;
                 }
-            }
-        }
-        return;
-    }
-    if (RS1) {
-        if (RS2) {
-            if (RS3) {
-                // Interrupt Enable Register
-                if (RWB) {
-                    if (!PHI2)
-                        dataPins = interruptEnableRegister;
-                    return;
-                }
-                if (PHI2)
-                    interruptEnableRegister = dataPins;
                 return;
             }
-            // T1 Low-Order Latches
-            // TODO:
-            return;
         }
-        if (RS3) {
-            // Shift Register
-            // TODO: 
-            return;
+        if (PHI2 && lastClockState) {
+            portAOutputRegister = dataPins;
         }
+        return;
+    case 2:
         // Data Direction B
         if (RWB) {
-            dataPins = portBDataDirection;
-            return;
-        }
-        portBDataDirection = dataPins;
-        return;
-    }
-    if (RS2) {
-        if (RS3) {
-            // Peripheral Control Register
-            if (RWB) {
-                if (!PHI2)
-                    dataPins = peripheralControlRegister;
-                return;
+            if (PHI2) {
+                dataPins = portBDataDirection;
             }
-            if (PHI2)
-                peripheralControlRegister = dataPins;
             return;
         }
+        if (PHI2 && lastClockState) {
+            portBDataDirection = dataPins;
+        }
+        return;
+    case 3:
+        // Data Direction A
+        if (RWB) {
+            if (PHI2) {
+                dataPins = portADataDirection;
+            }
+            return;
+        }
+        if (PHI2 && lastClockState) {
+            portADataDirection = dataPins;
+        }
+        return;
+    case 4:
         // T1 Low - Order Latches T1 Low - Order Counter
         // TODO: 
-        return;
-    }
-    if (RS3) {
+        break;
+    case 5:
+        // T1 High-Order Counter
+        // TODO: 
+        break;
+    case 6:
+        // T1 Low-Order Latches
+        // TODO:
+        break;
+    case 7:
+        // T1 High-Order Latches
+        // TODO: 
+        break;
+    case 8:
         // T2 Low - Order Latches T2 Low - Order Counter
         // TODO: 
-        return;
-    }
-    // IO B
-    interruptFlagRegister &= 0b11101111;
-    if (peripheralControlRegister & 0x20) {
-        interruptFlagRegister &= 0b11110111;
-    }
-    if (RWB) {
-        if (!PHI2) {
-            portBRegister = portB;
-            for (uint8_t i = 1; i != 0; i = i << 1) {
-                if (i & portBDataDirection) {
-                    // empty
-                }
-                else {
-                    if (i & portBRegister) {
-                        dataPins |= i;
-                    }
-                    else {
-                        dataPins &= ~i;
-                    }
-                }
-            }
+        break;
+    case 9:
+        // T2 High - Order Counter
+        // TODO: 
+        break;
+    case 10:
+        // Shift Register
+        // TODO: 
+        break;
+    case 11:
+        // Auxiliary Control Register
+        // TODO: 
+        break;
+    case 12:
+        // Peripheral Control Register
+        if (RWB) {
+            if (PHI2)
+                dataPins = peripheralControlRegister;
+            return;
         }
+        if (PHI2 && lastClockState)
+            peripheralControlRegister = dataPins;
         return;
-    }
-    if (PHI2) {
-        portBRegister = dataPins;
-        for (uint8_t i = 1; i != 0; i = i << 1) {
-            if (i & portBDataDirection) {
-                if (i & portBRegister) {
-                    portB |= i;
-                }
-                else {
-                    portB &= ~i;
-                }
-            }
+    case 13:
+        // Interrupt Flag Register
+        if (RWB) {
+            if (PHI2)
+                dataPins = interruptFlagRegister;
+            return;
         }
+        if (PHI2 && lastClockState)
+            interruptFlagRegister = dataPins;
+        return;
+    case 14:
+        // Interrupt Enable Register
+        if (RWB) {
+            if (PHI2)
+                dataPins = interruptEnableRegister;
+            return;
+        }
+        if (PHI2 && lastClockState)
+            interruptEnableRegister = dataPins;
+        return;
+    case 15:
+        // IO A no "Handshake"
+        // TODO: 
+        break;
+    default:
+        std::unreachable();
+        break;
     }
-    return;
 }
 
 VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const bool& _CS1, const bool& _CS2B,
@@ -190,6 +172,30 @@ VersatileInterfaceAdapter::VersatileInterfaceAdapter(const bool& _RWB, const boo
     IRQB{_IRQB}, PHI2{_PHI2}, RESB{_RESB} { }
 
 void VersatileInterfaceAdapter::cycle() {
+    // update port A outputs
+    for (uint8_t i = 1; i != 0; i = i << 1) {
+        if (i & portADataDirection) {
+            if (i & portAOutputRegister) {
+                portA |= i;
+            }
+            else {
+                portA &= ~i;
+            }
+        }
+    }
+
+    // update port B outputs
+    for (uint8_t i = 1; i != 0; i = i << 1) {
+        if (i & portBDataDirection) {
+            if (i & portBOutputRegister) {
+                portB |= i;
+            }
+            else {
+                portB &= ~i;
+            }
+        }
+    }
+
     // TODO: external interrupts over interrupting pins
     // CA1 check
     if (interruptEnableRegister & 0x2) {
@@ -202,6 +208,9 @@ void VersatileInterfaceAdapter::cycle() {
             interruptFlagRegister |= 0x2;
         }
     }
+    if (!CA1before && CA1) {
+        portAInputRegister = portA;
+    }
     // CB1 check
     if (interruptEnableRegister & 0x10) {
         if (peripheralControlRegister & 0x10) {
@@ -212,6 +221,9 @@ void VersatileInterfaceAdapter::cycle() {
         else if (CB1before && !CB1) {
             interruptFlagRegister |= 0x10;
         }
+    }
+    if (!CB1before && CB1) {
+        portBInputRegister = portB;
     }
     // CA2 check
     if (interruptEnableRegister & 0x1) {
@@ -275,17 +287,20 @@ void VersatileInterfaceAdapter::cycle() {
     if (!CS1 || CS2B)
         return; // not selected
 
-
-
     registerOperation();
 }
 
 void VersatileInterfaceAdapter::reset() {
     portADataDirection = 0;
+    portAInputRegister = 0;
+    portAOutputRegister = 0;
     portBDataDirection = 0;
+    portBInputRegister = 0;
+    portBOutputRegister = 0;
     peripheralControlRegister = 0;
     interruptEnableRegister = 0;
     interruptFlagRegister = 0;
+    auxiliaryControlRegister = 0;
     CA1before = CA1;
     CA2before = CA2;
     CB1before = CB1;
