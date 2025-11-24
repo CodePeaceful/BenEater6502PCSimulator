@@ -9,7 +9,7 @@
 namespace fs = std::filesystem;
 
 Computer::Computer() : cpu{data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O, RESB},
-rom{addressModifiedRom, data}, ram{addressModifiedRam, data, ramOutputDisable, RWB},
+rom{address, data, romOutputDisable, romCS}, ram{address, data, ramOutputDisable, RWB, ramCS},
 via{RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2, RESB},
 screen{viaPortB, e, rw, rs} {
     cpu.reset();
@@ -33,33 +33,35 @@ void Computer::reprogram(const fs::path& binary32k) {
 
 void Computer::run() {
     std::jthread render(&Computer::display, std::ref(*this));
+    uint8_t cycleCount = 0;
     while (alive) {
         auto halfCycleStart = std::chrono::high_resolution_clock::now();
         cpu.cycle();
-
-        addressModifiedRom = address ^ 0x8000;
         rom.cycle();
-
-        addressModifiedRam = (PHI2 ? address | 0x8000 : address);
-        ramOutputDisable = address & 0x4000;
         ram.cycle();
+        via.cycle();
+        screen.cycle();
+
+        romCS = !(address & 0x8000);
+
+        ramCS = !(romCS && PHI2);
+        ramOutputDisable = address & 0x4000;
 
         viaCS1 = address & 0x2000;
-        viaCS2B = !(!static_cast<bool>(address & 0x8000) && (0x4000 & address));
+        viaCS2B = !(romCS && (0x4000 & address));
         RS0 = address & 0x0001;
         RS1 = address & 0x0002;
         RS2 = address & 0x0004;
         RS3 = address & 0x0008;
-        via.cycle();
 
         e = viaPortA & 0x80;
         rw = viaPortA & 0x40;
         rs = viaPortA & 0x20;
-        screen.cycle();
 
-        PHI2 = !PHI2;
+        PHI2 = cycleCount & 0x02;
+        cycleCount = (cycleCount + 1) % 4;
         auto halfCycleEnd = std::chrono::high_resolution_clock::now();
-        while (std::chrono::duration_cast<std::chrono::nanoseconds>(halfCycleEnd - halfCycleStart).count() < 490) {
+        while (std::chrono::duration_cast<std::chrono::nanoseconds>(halfCycleEnd - halfCycleStart).count() < 240) {
             halfCycleEnd = std::chrono::high_resolution_clock::now();
         }
     }

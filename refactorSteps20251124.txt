@@ -1,6 +1,6 @@
 hardware needs 2 low and 2 high cycles per clock cycle so any configuration works
     timing notes:
-        - CPU:
+        - CPU DONE
             - address MLB R/W SYNC VPB
                 is set during low 1 so execution order does not matter in default configuration
                 and garanteed until the end of high 2

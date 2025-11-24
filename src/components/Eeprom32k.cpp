@@ -1,6 +1,6 @@
 #include "Eeprom32k.hpp"
 
-Eeprom32k::Eeprom32k(uint16_t& _addressPins, uint8_t& _dataPins, bool& _outputEnable, bool& _chipSelect) :
+Eeprom32k::Eeprom32k(const uint16_t& _addressPins, uint8_t& _dataPins, const bool& _outputEnable, const bool& _chipSelect) :
     addressPins{_addressPins}, dataPins{_dataPins}, outputEnable{_outputEnable}, chipSelect{_chipSelect} { }
 
 void Eeprom32k::cycle() {

@@ -6,10 +6,10 @@ class Eeprom32k final
 {
 private:
     // pin references
-    uint16_t& addressPins; // 15ignored  A14 - A0
+    const uint16_t& addressPins; // 15ignored  A14 - A0
     uint8_t& dataPins; // D7 - D0
-    bool& outputEnable; // active low
-    bool& chipSelect; // active low
+    const bool& outputEnable; // active low
+    const bool& chipSelect; // active low
 
     // internals
     std::array<uint8_t, 0x8000> data;
@@ -21,7 +21,7 @@ private:
     bool isWriting{false};
 
 public:
-    Eeprom32k(uint16_t& _addressPins, uint8_t& _dataPins, bool& _outputEnable, bool& _chipSelect);
+    Eeprom32k(const uint16_t& _addressPins, uint8_t& _dataPins, const bool& _outputEnable, const bool& _chipSelect);
     void cycle();
     void program(const std::array<uint8_t, 0x8000>& _data);
 };

@@ -29,11 +29,12 @@ private:
     bool RESB{true};
 
     // modified for rom
-    uint16_t addressModifiedRom{0};
+    const bool romOutputDisable{false};
+    bool romCS{false};
 
     // modified for ram
-    uint16_t addressModifiedRam{0};
     bool ramOutputDisable;
+    bool ramCS{false};
 
     // modified Cpu pins for versatile interface adapter
     bool RS0; // register select
