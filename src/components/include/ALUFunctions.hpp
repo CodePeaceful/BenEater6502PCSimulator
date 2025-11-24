@@ -92,7 +92,7 @@ inline uint8_t xorOperation(uint8_t first, uint8_t second, uint8_t& processorSta
 
 
 // TODO: Implement tests
-inline void bitTest(uint8_t value, uint8_t& processorStatus, uint8_t testValue) noexcept {
+inline void bitTest(uint8_t value, uint8_t testValue, uint8_t& processorStatus) noexcept {
     // Set zero flag
     if ((value & testValue) == 0) {
         processorStatus |= 0x02; // Set zero flag
@@ -203,14 +203,24 @@ inline uint8_t rotateRight(uint8_t value, uint8_t& processorStatus) noexcept {
     return value;
 }
 
-inline uint8_t resetBit(uint8_t value, uint8_t bitPosition) noexcept {
-    value &= ~(1 << bitPosition);
-    return value;
+inline uint8_t testAndSet(uint8_t first, uint8_t second, uint8_t& processorStatus) noexcept {
+    if ((first & second) == 0) {
+        processorStatus |= 0x02; // Set zero flag
+    }
+    else {
+        processorStatus &= ~0x02; // Clear zero flag
+    }
+    return first | second;
 }
 
-inline uint8_t setBit(uint8_t value, uint8_t bitPosition) noexcept {
-    value |= (1 << bitPosition);
-    return value;
+inline uint8_t testAndReset(uint8_t first, uint8_t second, uint8_t& processorStatus) noexcept {
+    if ((first & second) == 0) {
+        processorStatus |= 0x02; // Set zero flag
+    }
+    else {
+        processorStatus &= ~0x02; // Clear zero flag
+    }
+    return first & ~second;
 }
 
 inline uint8_t increment(uint8_t value, uint8_t& processorStatus) noexcept {

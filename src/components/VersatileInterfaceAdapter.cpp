@@ -263,10 +263,6 @@ void VersatileInterfaceAdapter::cycle() {
     CB1before = CB1;
     CB2before = CB2;
 
-    if (lastClockState == PHI2) {
-        return;
-    }
-    lastClockState = PHI2;
 
     if (!RESB && !PHI2) {
         reset();
@@ -288,6 +284,8 @@ void VersatileInterfaceAdapter::cycle() {
         return; // not selected
 
     registerOperation();
+
+    lastClockState = PHI2;
 }
 
 void VersatileInterfaceAdapter::reset() {

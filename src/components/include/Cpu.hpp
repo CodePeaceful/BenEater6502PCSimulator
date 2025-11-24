@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 
 /// Cpu has no decimal mode(ignored flag) or break instruction(terminate) rdy is not pulled low on wait or stop
 class Cpu final
 {
 private:
     // pin references
-    uint8_t& data; // D7 - D0
+    uint8_t& dataPins; // D7 - D0
     uint16_t& address; // A15 - A0
     bool& VPB; // Vector Pull
     bool& RDY; // ready: run on high
@@ -46,36 +47,31 @@ private:
     bool followingRequest{false};
     bool followingOrder{false};
     bool lastRESB{false};
+    bool ready{true};
+    bool busEnabled{true};
     uint8_t resetTimer;
     uint8_t instructionBufferLow;
     uint8_t instructionBufferHigh;
 
     uint8_t writeBackCounter;
 
+    bool isReady() noexcept;
+
     void fetch()noexcept;
-    void toBus() const noexcept;
+    /// @brief everything that happens at the end of every subcycle
+    void toBus() noexcept;
     void handleInterruptRequest()noexcept;
     void handleNonMaskableInterrupt()noexcept;
     void chooseInstruction()noexcept;
 
     // executions
-    void addWithCarry(bool(Cpu::* address)())noexcept;
-    void subtractWithCarry(bool(Cpu::* address)())noexcept;
-    void orA(bool(Cpu::* address)())noexcept;
-    void andA(bool(Cpu::* address)())noexcept;
-    void xorA(bool(Cpu::* address)())noexcept;
+    void readModifyWrite(std::function<uint8_t(uint8_t, uint8_t&)> operation, bool(Cpu::* address)())noexcept;
+    void readNoWrite(uint8_t& target, std::function<uint8_t(uint8_t, uint8_t&)> operation, bool(Cpu::* address)())noexcept;
+
     void load(uint8_t& cpuRegister, bool(Cpu::* address)())noexcept;
     void store(uint8_t value, bool(Cpu::* address)())noexcept;
     void bitTest(bool(Cpu::* address)())noexcept;
     void compare(uint8_t first, bool(Cpu::* address)())noexcept;
-    void testAndSetMemoryBit(bool(Cpu::* address)())noexcept;
-    void testAndResetMemoryBit(bool(Cpu::* address)())noexcept;
-    void rotateRight(bool(Cpu::* address)())noexcept;
-    void rotateLeft(bool(Cpu::* address)())noexcept;
-    void shiftRight(bool(Cpu::* address)())noexcept;
-    void shiftLeft(bool(Cpu::* address)())noexcept;
-    void increment(bool(Cpu::* address)())noexcept;
-    void decrement(bool(Cpu::* address)())noexcept;
 
     void resetMemoryBit(uint8_t bitId)noexcept;
     void setMemoryBit(uint8_t bitId)noexcept;
