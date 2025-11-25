@@ -33,14 +33,13 @@ void Computer::reprogram(const fs::path& binary32k) {
 
 void Computer::run() {
     std::jthread render(&Computer::display, std::ref(*this));
-    uint8_t cycleCount = 0;
+    uint8_t cycleCount = 3;
     while (alive) {
         auto halfCycleStart = std::chrono::high_resolution_clock::now();
+        PHI2 = cycleCount & 0x02;
+        cycleCount = (cycleCount + 1) % 4;
+
         cpu.cycle();
-        rom.cycle();
-        ram.cycle();
-        via.cycle();
-        screen.cycle();
 
         romCS = !(address & 0x8000);
 
@@ -58,8 +57,11 @@ void Computer::run() {
         rw = viaPortA & 0x40;
         rs = viaPortA & 0x20;
 
-        PHI2 = cycleCount & 0x02;
-        cycleCount = (cycleCount + 1) % 4;
+        rom.cycle();
+        ram.cycle();
+        via.cycle();
+        screen.cycle();
+
         auto halfCycleEnd = std::chrono::high_resolution_clock::now();
         while (std::chrono::duration_cast<std::chrono::nanoseconds>(halfCycleEnd - halfCycleStart).count() < 240) {
             halfCycleEnd = std::chrono::high_resolution_clock::now();
@@ -89,7 +91,7 @@ void Computer::display() {
             }
         }
         // left mouse button for interrupt
-        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
 
         window.clear(sf::Color(0, 0, 0, 255));
         screen.draw(window);
