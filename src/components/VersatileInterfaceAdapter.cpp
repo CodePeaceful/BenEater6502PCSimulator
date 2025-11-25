@@ -4,10 +4,9 @@
 #include <utility>
 
 void VersatileInterfaceAdapter::registerOperation() noexcept {
-    if (!lastClockState && PHI2) {
-        // rising edge
-        address = (RS3 << 3) | (RS2 << 2) | (RS1 << 1) | RS0;
-    }
+
+    address = (RS3 << 3) | (RS2 << 2) | (RS1 << 1) | RS0;
+
     switch (address) {
     case 0:
         // IO B

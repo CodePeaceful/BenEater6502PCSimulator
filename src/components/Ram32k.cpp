@@ -5,10 +5,10 @@ Ram32k::Ram32k(const uint16_t& _addressAndChipSelect, uint8_t& _data, const bool
 
 void Ram32k::cycle() {
     uint16_t address = addressPins & 0x7FFF; // mask A14 - A0
-    if (!CSbefore && (!CS || inOperation)) {
-        if (!WE && !WEbefore) {
+    if (!CS) {
+        if (!CSbefore && !WE && !WEbefore) {
             // Write operation
-            dataStore[address] = data;
+            dataStore[addressBefore] = data;
             inOperation = true;
         }
         else if ((!OE || inOperation) && !OEbefore && (WE || inOperation) && WEbefore) {

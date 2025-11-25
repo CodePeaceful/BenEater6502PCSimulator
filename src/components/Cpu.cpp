@@ -51,12 +51,8 @@ void Cpu::toBus() noexcept {
             dataPins = dataBuffer;
         }
     }
-    if (BE) {
-        busEnabled = true;
-    }
-    if (RESB) {
-        lastRESB = true;
-    }
+    busEnabled = BE;
+    lastRESB = RESB;
     lastClockState = PHI2;
 }
 
@@ -171,7 +167,7 @@ void Cpu::handleNonMaskableInterrupt() noexcept {
         return;
     }
     fetch();
-    if (PHI2) {
+    if (PHI2 && lastClockState) {
         followingOrder = false;
     }
 }
@@ -1058,7 +1054,7 @@ void Cpu::branchIf(const bool condition) noexcept {
     }
     if (TCU == 2) {
         if (condition) {
-            if (!PHI2) {
+            if (!PHI2 && lastClockState) {
                 programCounter += instructionBufferLow;
                 if (instructionBufferLow & 0xf0) {
                     programCounter -= 256;
@@ -2948,8 +2944,8 @@ void Cpu::cycle() noexcept {
                 addressBuffer = programCounter;
                 IR = 0x4C;
             }
-            toBus();
         }
+        toBus();
         return;
     }
     if (!PHI2 && lastClockState) {

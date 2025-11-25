@@ -46,7 +46,7 @@ private:
     bool inbreak{false};
     bool followingRequest{false};
     bool followingOrder{false};
-    bool lastRESB{false};
+    bool lastRESB{true};
     bool ready{true};
     bool busEnabled{true};
     uint8_t resetTimer;
