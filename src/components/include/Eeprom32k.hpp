@@ -2,6 +2,8 @@
 #include <array>
 #include <cstdint>
 
+namespace components
+{
 class Eeprom32k final
 {
 private:
@@ -25,3 +27,4 @@ public:
     void cycle();
     void program(const std::array<uint8_t, 0x8000>& _data);
 };
+} // namespace components

@@ -4,6 +4,8 @@
 
 #include "ALUFunctions.hpp"
 
+namespace components
+{
 bool Cpu::isReady() noexcept {
     bool readyNow = ready;
     if (PHI2 && lastClockState && !RDY) {
@@ -2977,3 +2979,4 @@ void Cpu::reset() noexcept {
     resetTimer = 7;
     IR = 0x6C;
 }
+} // namespace components

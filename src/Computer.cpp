@@ -6,12 +6,14 @@
 #include <print>
 
 #include <SFML/Graphics.hpp>
+
+#include "ComputerLogger.hpp"
 namespace fs = std::filesystem;
 
 Computer::Computer() : cpu{data, address, VPB, RDY, IRQB, MLB, NMIB, SYNC, RWB, BE, SOB, PHI2, PHI1O, PHI2O, RESB},
 rom{address, data, romOutputDisable, romCS}, ram{address, data, ramOutputDisable, RWB, ramCS},
 via{RWB, viaCS1, viaCS2B, data, viaPortA, viaPortB, RS0, RS1, RS2, RS3, CA1, CA2, CB1, CB2, IRQB, PHI2, RESB},
-screen{viaPortB, e, rw, rs} {
+lcd{viaPortB, e, rw, rs}, lcdRenderer{lcd} {
     cpu.reset();
     via.reset();
 }
@@ -34,9 +36,17 @@ void Computer::reprogram(const fs::path& binary32k) {
 void Computer::run() {
     std::jthread render(&Computer::display, std::ref(*this));
     uint8_t cycleCount = 3;
+#ifdef logging
+    ComputerLogger logger(ram, cpu, via, lcd);
+#endif
     while (alive) {
         auto halfCycleStart = std::chrono::high_resolution_clock::now();
         PHI2 = cycleCount & 0x02;
+#ifdef logging
+        if (cycleCount == 0) {
+            logger.logCycle();
+        }
+#endif
         cycleCount = (cycleCount + 1) % 4;
 
         cpu.cycle();
@@ -60,7 +70,7 @@ void Computer::run() {
         rom.cycle();
         ram.cycle();
         via.cycle();
-        screen.cycle();
+        lcd.cycle();
 
         auto halfCycleEnd = std::chrono::high_resolution_clock::now();
         while (std::chrono::duration_cast<std::chrono::nanoseconds>(halfCycleEnd - halfCycleStart).count() < 240) {
@@ -90,11 +100,11 @@ void Computer::display() {
                 }
             }
         }
-        // left mouse button for interrupt
-        NMIB = !sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
+
+        NMIB = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 2 == 0;
 
         window.clear(sf::Color(0, 0, 0, 255));
-        screen.draw(window);
+        lcdRenderer.draw(window);
         window.display();
     }
 }

@@ -21,8 +21,8 @@ TEST(addWithCarry, noDecimal_noCarry_params_resultA_resultStatus_A_Status_second
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         auto flags = inFlags;
         uint8_t A = ALUFunctions::addWithCarry(inA, inValue, flags);
-        ASSERT_EQ(resultA, A);
-        ASSERT_EQ(resultFlags, flags);
+        EXPECT_EQ(resultA, A);
+        EXPECT_EQ(resultFlags, flags);
     }
 }
 
@@ -41,8 +41,8 @@ TEST(addWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_secon
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         auto flags = inFlags;
         uint8_t A = ALUFunctions::addWithCarry(inA, inValue, flags);
-        ASSERT_EQ(resultA, A);
-        ASSERT_EQ(resultFlags, flags);
+        EXPECT_EQ(resultA, A);
+        EXPECT_EQ(resultFlags, flags);
     }
 }
 
@@ -60,8 +60,8 @@ TEST(subtractWithCarry, noDecimal_noCarry_params_resultA_resultStatus_A_Status_s
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         auto flags = inFlags;
         uint8_t A = ALUFunctions::subtractWithCarry(inA, inValue, flags);
-        ASSERT_EQ(resultA, A);
-        ASSERT_EQ(resultFlags, flags);
+        EXPECT_EQ(resultA, A);
+        EXPECT_EQ(resultFlags, flags);
     }
 }
 
@@ -79,8 +79,8 @@ TEST(subtractWithCarry, noDecimal_yesCarry_params_resultA_resultStatus_A_Status_
     for (const auto& [resultA, resultFlags, inA, inFlags, inValue] : cases) {
         auto flags = inFlags;
         uint8_t A = ALUFunctions::subtractWithCarry(inA, inValue, flags);
-        ASSERT_EQ(resultA, A);
-        ASSERT_EQ(resultFlags, flags);
+        EXPECT_EQ(resultA, A);
+        EXPECT_EQ(resultFlags, flags);
     }
 }
 
@@ -124,7 +124,7 @@ TEST(compare, compare) {
     for (const auto& [inA, inFlags, inValue, outFlags] : cases) {
         auto flags = inFlags;
         ALUFunctions::compare(inA, inValue, flags);
-        ASSERT_EQ(outFlags, flags);
+        EXPECT_EQ(outFlags, flags);
     }
 }
 

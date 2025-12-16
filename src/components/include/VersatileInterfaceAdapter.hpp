@@ -1,8 +1,15 @@
 #pragma once
 #include <cstdint>
 
+namespace components
+{
+namespace logger
+{
+class VIALogger;
+};
 class VersatileInterfaceAdapter final
 {
+    friend class logger::VIALogger;
 private:
     // pin references
     const bool& RWB; // readWrite to attach to Cpu
@@ -54,3 +61,4 @@ public:
     void cycle();
     void reset();
 };
+} // namespace components

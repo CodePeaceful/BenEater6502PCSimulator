@@ -18,3 +18,13 @@ target_link_libraries(cpuTest
   )
 
 add_test(cpu_gtest cpuTest)
+
+add_executable(miniLcdTest MiniLCDTest.cpp)
+
+target_link_libraries(miniLcdTest
+ PRIVATE
+  GTest::GTest
+  Components
+  )
+
+add_test(lcd_gtest miniLcdTest)

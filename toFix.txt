@@ -1,0 +1,2 @@
+strange bug of unknown origin
+    - logger required

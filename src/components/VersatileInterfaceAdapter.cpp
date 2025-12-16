@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <utility>
 
+namespace components
+{
 void VersatileInterfaceAdapter::registerOperation() noexcept {
 
     address = (RS3 << 3) | (RS2 << 2) | (RS1 << 1) | RS0;
@@ -303,3 +305,4 @@ void VersatileInterfaceAdapter::reset() {
     CB1before = CB1;
     CB2before = CB2;
 }
+} // namespace components

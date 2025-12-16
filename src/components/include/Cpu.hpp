@@ -4,8 +4,15 @@
 #include <functional>
 
 /// Cpu has no decimal mode(ignored flag) or break instruction(terminate) rdy is not pulled low on wait or stop
+namespace components
+{
+namespace logger
+{
+class CpuLogger;
+};
 class Cpu final
 {
+    friend class logger::CpuLogger;
 private:
     // pin references
     uint8_t& dataPins; // D7 - D0
@@ -315,3 +322,4 @@ public:
     void cycle()noexcept;
     void reset()noexcept;
 };
+} // namespace components

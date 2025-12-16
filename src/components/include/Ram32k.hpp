@@ -3,9 +3,16 @@
 #include <array>
 #include <cstdint>
 
+namespace components
+{
+namespace logger
+{
+class RamLogger;
+};
 //timing problems will be ignored
 class Ram32k final
 {
+    friend class logger::RamLogger;
 private:
     // pin references
     const uint16_t& addressPins; // 15ignored A14 - A0
@@ -28,3 +35,4 @@ public:
     Ram32k(const uint16_t& _addressPins, uint8_t& _data, const bool& _OE, const bool& _WE, const bool& _CS);
     void cycle();
 };
+} // namespace components

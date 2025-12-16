@@ -1,5 +1,7 @@
 #include "Eeprom32k.hpp"
 
+namespace components
+{
 Eeprom32k::Eeprom32k(const uint16_t& _addressPins, uint8_t& _dataPins, const bool& _outputEnable, const bool& _chipSelect) :
     addressPins{_addressPins}, dataPins{_dataPins}, outputEnable{_outputEnable}, chipSelect{_chipSelect} { }
 
@@ -25,3 +27,4 @@ void Eeprom32k::cycle() {
 void Eeprom32k::program(const std::array<uint8_t, 0x8000>& _data) {
     data = _data;
 }
+} // namespace components

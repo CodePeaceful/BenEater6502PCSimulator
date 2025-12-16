@@ -7,7 +7,9 @@
 #include <VersatileInterfaceAdapter.hpp>
 #include <Ram32k.hpp>
 #include <MiniLCD.hpp>
+#include <MiniLCDRenderer.hpp>
 
+using namespace components;
 class Computer final
 {
 private:
@@ -63,7 +65,8 @@ private:
     Eeprom32k rom;
     Ram32k ram;
     VersatileInterfaceAdapter via;
-    MiniLCD screen;
+    MiniLCD lcd;
+    MiniLCDRenderer lcdRenderer;
 
 public:
     Computer();

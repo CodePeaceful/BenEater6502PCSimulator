@@ -1,9 +1,52 @@
 #include "MiniLCD.hpp"
 
-#include <algorithm>
 #include <bit>
 
 using namespace std::literals::chrono_literals;
+
+namespace components
+{
+void MiniLCD::processPendingCommand() {
+    if (!pendingCommand.has_value()) {
+        return;
+    }
+    if (pendingCommand->ddr) {
+        if (pendingCommand->read) {
+            if (ddrMutex.try_lock()) {
+                data = displayDataRam[pendingCommand->address];
+                ddrMutex.unlock();
+                pendingCommand.reset();
+                return;
+            }
+        }
+        else {
+            if (ddrMutex.try_lock()) {
+                displayDataRam[pendingCommand->address] = pendingCommand->data;
+                ddrMutex.unlock();
+                pendingCommand.reset();
+                return;
+            }
+        }
+    }
+    else {
+        if (pendingCommand->read) {
+            if (cgrMutex.try_lock()) {
+                data = characterGeneratorRam[pendingCommand->address];
+                cgrMutex.unlock();
+                pendingCommand.reset();
+                return;
+            }
+        }
+        else {
+            if (cgrMutex.try_lock()) {
+                characterGeneratorRam[pendingCommand->address] = pendingCommand->data;
+                cgrMutex.unlock();
+                pendingCommand.reset();
+                return;
+            }
+        }
+    }
+}
 
 void MiniLCD::cycleCommand() {
     if (RW) {
@@ -25,7 +68,13 @@ void MiniLCD::cycleCommand() {
         switch (std::bit_width(data)) {
         case 1:
             cgRam = false;
-            displayDataRam.fill(0x20);
+            if (ddrMutex.try_lock()) {
+                displayDataRam.fill(0x20);
+                ddrMutex.unlock();
+            }
+            else {
+                pendingCommand = TODO{.ddr = true, .clear = true};
+            }
             addressCounter = 0;
             curserCell = 0;
             curserLine1 = true;
@@ -78,7 +127,7 @@ void MiniLCD::cycleCommand() {
             addressCounter = data & 0b01111111;
             if (addressCounter < 40) {
                 curserLine1 = true;
-                shiftPos = addressCounter;
+                shiftPos = addressCounter.load();
             }
             else if (addressCounter >= 0x40 && addressCounter <= 0x67) {
                 curserLine1 = false;
@@ -106,7 +155,13 @@ void MiniLCD::cycleData() {
     if (RW) {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
-                data = characterGeneratorRam[addressCounter];
+                if (cgrMutex.try_lock()) {
+                    data = characterGeneratorRam[addressCounter];
+                    cgrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = false, .read = true, .address = addressCounter};
+                }
             }
             else {
                 data = 0;
@@ -114,10 +169,22 @@ void MiniLCD::cycleData() {
         }
         else {
             if (addressCounter < 40) {
-                data = displayDataRam[addressCounter];
+                if (ddrMutex.try_lock()) {
+                    data = displayDataRam[addressCounter];
+                    ddrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = true, .read = true, .address = addressCounter};
+                }
             }
             else if (addressCounter >= 0x40 && addressCounter < 0x68) {
-                data = displayDataRam[addressCounter - 0x40 + 40];
+                if (ddrMutex.try_lock()) {
+                    data = displayDataRam[addressCounter - 0x40 + 40];
+                    ddrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = true, .read = true, .address = uint8_t(addressCounter - 0x40 + 40)};
+                }
             }
             else {
                 data = 0;
@@ -127,22 +194,40 @@ void MiniLCD::cycleData() {
     else {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
-                characterGeneratorRam[addressCounter] = data;
+                if (cgrMutex.try_lock()) {
+                    characterGeneratorRam[addressCounter] = data;
+                    cgrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = false, .data = data, .address = addressCounter};
+                }
             }
         }
         else {
             if (addressCounter < 40) {
-                displayDataRam[addressCounter] = data;
+                if (ddrMutex.try_lock()) {
+                    displayDataRam[addressCounter] = data;
+                    ddrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = true, .data = data, .address = addressCounter};
+                }
             }
             else if (addressCounter >= 0x40 && addressCounter < 0x68) {
-                displayDataRam[addressCounter - 0x40 + 40] = data;
+                if (ddrMutex.try_lock()) {
+                    displayDataRam[addressCounter - 0x40 + 40] = data;
+                    ddrMutex.unlock();
+                }
+                else {
+                    pendingCommand = TODO{.ddr = true, .data = data, .address = uint8_t(addressCounter - 0x40 + 40)};
+                }
             }
         }
     }
     if (moveRight) {
         if (doShift) {
             ++shiftPos;
-            shiftPos %= 40;
+            shiftPos = shiftPos.load() % 40;
         }
         else if (curserCell < 15) {
             ++curserCell;
@@ -185,93 +270,14 @@ void MiniLCD::cycleData() {
     }
 }
 
-void MiniLCD::updateTexture() {
-    int i = 0;
-    for (volatile const auto& d : characterGeneratorRam) {
-        std::uint8_t pixel[20]{0};
-        if (d & 0b00010000) {
-            pixel[3] = 255;
-        }
-        if (d & 0b00001000) {
-            pixel[3 + 4] = 255;
-        }
-        if (d & 0b00000100) {
-            pixel[3 + 8] = 255;
-        }
-        if (d & 0b00000010) {
-            pixel[3 + 12] = 255;
-        }
-        if (d & 0b00000001) {
-            pixel[3 + 16] = 255;
-        }
-        texture.update(pixel, sf::Vector2u(5, 1), sf::Vector2u(3, i));
-        ++i;
-    }
-}
-
-void MiniLCD::updateDisplay() {
-    updateTexture();
-    for (auto i = 0ull; i < topRow.size(); ++i) {
-        unsigned char topInt = displayDataRam[(shiftPos + i) % 40];
-        unsigned char topIntLittle = topInt & 0b00001111;
-        unsigned char topIntBig = (topInt >> 4) & 0b00001111;
-        unsigned char bottomInt = displayDataRam[(shiftPos + i) % 40 + 40];
-        unsigned char bottomIntLittle = bottomInt & 0b00001111;
-        unsigned char bottomIntBig = (bottomInt >> 4) & 0b00001111;
-        sf::Vector2i topChar(topIntBig * 8, topIntLittle * 8);
-        sf::Vector2i bottomChar(bottomIntBig * 8, bottomIntLittle * 8);
-        topRow[i].setTextureRect(sf::IntRect(topChar, sf::Vector2i(8, 8)));
-        bottomRow[i].setTextureRect(sf::IntRect(bottomChar, sf::Vector2i(8, 8)));
-    }
-    if (curserOn) {
-        if (!curserBlink || std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 2 == 0) {
-            curser.setFillColor(sf::Color(0, 0, 0, 255));
-            float posX = background.getPosition().x + 6 + curserCell * 16;
-            float posY = background.getPosition().y + 18 + (curserLine1 ? 0 : 20);
-            sf::Vector2f posVec(posX, posY);
-            curser.setPosition(posVec);
-            return;
-        }
-    }
-    curser.setFillColor(sf::Color(0, 0, 0, 0));
-}
-
 MiniLCD::MiniLCD(uint8_t& _data, const bool& _E, const bool& _RW, const bool& _RS) : data{_data}, E{_E}, RW{_RW}, RS{_RS} {
-    texture = sf::Texture("resources/HD44780_5x8Symbols.png");
-    background.setSize(sf::Vector2f(256, 42));
-    background.setFillColor(sf::Color::Green);
-    curser.setSize(sf::Vector2f(6, 2));
-    for (auto i = 0ull; i < topRow.size(); ++i) {
-        topRow[i].scale(sf::Vector2f(2, 2));
-        topRow[i].setPosition(sf::Vector2f(16 * i, 2));
-        bottomRow[i].scale(sf::Vector2f(2, 2));
-        bottomRow[i].setPosition(sf::Vector2f(16 * i, 22));
-    }
     displayDataRam.fill(0x20);
 }
 
-void MiniLCD::draw(sf::RenderTarget& window) {
-    if (!screenOn) {
-        return;
-    }
-    updateDisplay();
-    window.draw(background);
-    for (auto i = 0; i < 16; ++i) {
-        window.draw(topRow[i]);
-        window.draw(bottomRow[i]);
-    }
-    window.draw(curser);
-}
-
-void MiniLCD::move(sf::Vector2f vec) {
-    background.move(vec);
-    std::ranges::for_each(topRow, [&vec](sf::Sprite& s) {s.move(vec); });
-    std::ranges::for_each(bottomRow, [&vec](sf::Sprite& s) {s.move(vec); });
-    curser.move(vec);
-}
-
 void MiniLCD::cycle() {
-    busy = busyEndTime > std::chrono::high_resolution_clock::now();
+    processPendingCommand();
+
+    busy = busyEndTime > std::chrono::high_resolution_clock::now() && pendingCommand == std::nullopt;
     if (!E) {
         done = false;
         return;
@@ -287,3 +293,4 @@ void MiniLCD::cycle() {
 
     cycleCommand();
 }
+} // namespace components

@@ -1,5 +1,7 @@
 #include "Ram32k.hpp"
 
+namespace components
+{
 Ram32k::Ram32k(const uint16_t& _addressAndChipSelect, uint8_t& _data, const bool& _OE, const bool& _WE, const bool& _CS) :
     addressPins{_addressAndChipSelect}, data{_data}, OE{_OE}, WE{_WE}, CS{_CS} { }
 
@@ -30,3 +32,4 @@ void Ram32k::cycle() {
     WEbefore = WE;
     CSbefore = CS;
 }
+} // namespace components
