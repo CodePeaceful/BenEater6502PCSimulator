@@ -28,4 +28,6 @@ enable_testing()
 
 add_subdirectory(src)
 
+set(longTests = TRUE)
+
 add_subdirectory(tests)

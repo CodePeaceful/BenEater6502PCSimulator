@@ -81,7 +81,7 @@ void Computer::run() {
 
 void Computer::display() {
     sf::RenderWindow window(sf::VideoMode(sf::Vector2u(256, 144)), "Ben Eater MiniPC Output", sf::State::Windowed);
-    window.setFramerateLimit(60);
+    window.setFramerateLimit(20);
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -101,7 +101,7 @@ void Computer::display() {
             }
         }
 
-        NMIB = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() % 2 == 0;
+        NMIB = !NMIB;
 
         window.clear(sf::Color(0, 0, 0, 255));
         lcdRenderer.draw(window);

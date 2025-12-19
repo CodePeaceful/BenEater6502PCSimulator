@@ -5,16 +5,19 @@ void ComputerLogger::logCycle() noexcept {
     auto cpuLog = cpuLogger.logState();
     if (!cpuLog.empty()) {
         logBuffer[logIndex % logBuffer.size()] = std::format(
-            "{} | {} \n{}\nDisplayed Number: {}",
-            cpuLog,
+            "{}\nDisplayed Number: {}",
+            //cpuLog,
             viaLogger.logState(),
-            ramLogger.logState(),
+            //ramLogger.logState(),
             displayedNumberLogger.getDisplayedNumber()
         );
         ++logIndex;
         if (DisplayedNumber + 1 < displayedNumberLogger.getDisplayedNumber() && displayedNumberLogger.getDisplayedNumber() != DisplayedNumber + 10 && displayedNumberLogger.getDisplayedNumber() != DisplayedNumber + 100) {
             std::ofstream logFile("computer_log.txt");
             for (std::size_t i = 0; i < std::min(logIndex, logBuffer.size()); ++i) {
+                if (i > 0 && logBuffer[(logIndex + i) % logBuffer.size()] == logBuffer[(logIndex + i - 1) % logBuffer.size()]) {
+                    continue;
+                }
                 logFile << logBuffer[(logIndex + i) % logBuffer.size()] << "\n\n";
             }
             logFile.close();

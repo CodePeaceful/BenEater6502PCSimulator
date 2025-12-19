@@ -15,7 +15,7 @@ private:
     logger::CpuLogger cpuLogger;
     logger::VIALogger viaLogger;
     logger::DisplayedNumberLogger displayedNumberLogger;
-    std::array<std::string, 256> logBuffer;
+    std::array<std::string, 0x8000> logBuffer;
     std::size_t logIndex{0};
     uint32_t DisplayedNumber{0};
 public:
