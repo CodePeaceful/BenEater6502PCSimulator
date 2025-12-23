@@ -6,48 +6,6 @@ using namespace std::literals::chrono_literals;
 
 namespace components
 {
-void MiniLCD::processPendingCommand() {
-    if (!pendingCommand.has_value()) {
-        return;
-    }
-    if (pendingCommand->ddr) {
-        if (pendingCommand->read) {
-            if (ddrMutex.try_lock()) {
-                data = displayDataRam[pendingCommand->address];
-                ddrMutex.unlock();
-                pendingCommand.reset();
-                return;
-            }
-        }
-        else {
-            if (ddrMutex.try_lock()) {
-                displayDataRam[pendingCommand->address] = pendingCommand->data;
-                ddrMutex.unlock();
-                pendingCommand.reset();
-                return;
-            }
-        }
-    }
-    else {
-        if (pendingCommand->read) {
-            if (cgrMutex.try_lock()) {
-                data = characterGeneratorRam[pendingCommand->address];
-                cgrMutex.unlock();
-                pendingCommand.reset();
-                return;
-            }
-        }
-        else {
-            if (cgrMutex.try_lock()) {
-                characterGeneratorRam[pendingCommand->address] = pendingCommand->data;
-                cgrMutex.unlock();
-                pendingCommand.reset();
-                return;
-            }
-        }
-    }
-}
-
 void MiniLCD::cycleCommand() {
     if (RW) {
         if (eightBit) {
@@ -68,13 +26,7 @@ void MiniLCD::cycleCommand() {
         switch (std::bit_width(data)) {
         case 1:
             cgRam = false;
-            if (ddrMutex.try_lock()) {
-                displayDataRam.fill(0x20);
-                ddrMutex.unlock();
-            }
-            else {
-                pendingCommand = TODO{.ddr = true, .clear = true};
-            }
+            displayDataRam.fill(0x20);
             addressCounter = 0;
             curserCell = 0;
             curserLine1 = true;
@@ -127,7 +79,7 @@ void MiniLCD::cycleCommand() {
             addressCounter = data & 0b01111111;
             if (addressCounter < 40) {
                 curserLine1 = true;
-                shiftPos = addressCounter.load();
+                shiftPos = addressCounter;
             }
             else if (addressCounter >= 0x40 && addressCounter <= 0x67) {
                 curserLine1 = false;
@@ -155,13 +107,7 @@ void MiniLCD::cycleData() {
     if (RW) {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
-                if (cgrMutex.try_lock()) {
-                    data = characterGeneratorRam[addressCounter];
-                    cgrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = false, .read = true, .address = addressCounter};
-                }
+                data = characterGeneratorRam[addressCounter];
             }
             else {
                 data = 0;
@@ -169,22 +115,10 @@ void MiniLCD::cycleData() {
         }
         else {
             if (addressCounter < 40) {
-                if (ddrMutex.try_lock()) {
-                    data = displayDataRam[addressCounter];
-                    ddrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = true, .read = true, .address = addressCounter};
-                }
+                data = displayDataRam[addressCounter];
             }
             else if (addressCounter >= 0x40 && addressCounter < 0x68) {
-                if (ddrMutex.try_lock()) {
-                    data = displayDataRam[addressCounter - 0x40 + 40];
-                    ddrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = true, .read = true, .address = uint8_t(addressCounter - 0x40 + 40)};
-                }
+                data = displayDataRam[addressCounter - 0x40 + 40];
             }
             else {
                 data = 0;
@@ -194,40 +128,22 @@ void MiniLCD::cycleData() {
     else {
         if (cgRam) {
             if (addressCounter < characterGeneratorRam.size()) {
-                if (cgrMutex.try_lock()) {
-                    characterGeneratorRam[addressCounter] = data;
-                    cgrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = false, .data = data, .address = addressCounter};
-                }
+                characterGeneratorRam[addressCounter] = data;
             }
         }
         else {
             if (addressCounter < 40) {
-                if (ddrMutex.try_lock()) {
-                    displayDataRam[addressCounter] = data;
-                    ddrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = true, .data = data, .address = addressCounter};
-                }
+                displayDataRam[addressCounter] = data;
             }
             else if (addressCounter >= 0x40 && addressCounter < 0x68) {
-                if (ddrMutex.try_lock()) {
-                    displayDataRam[addressCounter - 0x40 + 40] = data;
-                    ddrMutex.unlock();
-                }
-                else {
-                    pendingCommand = TODO{.ddr = true, .data = data, .address = uint8_t(addressCounter - 0x40 + 40)};
-                }
+                displayDataRam[addressCounter - 0x40 + 40] = data;
             }
         }
     }
     if (moveRight) {
         if (doShift) {
             ++shiftPos;
-            shiftPos = shiftPos.load() % 40;
+            shiftPos %= 40;
         }
         else if (curserCell < 15) {
             ++curserCell;
@@ -275,9 +191,6 @@ MiniLCD::MiniLCD(uint8_t& _data, const bool& _E, const bool& _RW, const bool& _R
 }
 
 void MiniLCD::cycle() {
-    processPendingCommand();
-
-    busy = busyEndTime > std::chrono::high_resolution_clock::now() && pendingCommand == std::nullopt;
     if (!E) {
         done = false;
         return;
@@ -285,7 +198,11 @@ void MiniLCD::cycle() {
 
     if (done)
         return;
-
+#ifdef neverBusy
+    busy = false;
+#else
+    busy = busyEndTime > std::chrono::high_resolution_clock::now();
+#endif    
     done = true;
 
     if (RS)

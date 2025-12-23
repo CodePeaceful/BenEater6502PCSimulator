@@ -6,9 +6,7 @@ namespace components
 {
 void MiniLCDRenderer::updateTexture() {
     int i = 0;
-    lcd.cgrMutex.lock();
     auto characterGeneratorRam = lcd.characterGeneratorRam;
-    lcd.cgrMutex.unlock();
     for (const auto& d : characterGeneratorRam) {
         std::uint8_t pixel[20]{0};
         if (d & 0b00010000) {
@@ -33,9 +31,7 @@ void MiniLCDRenderer::updateTexture() {
 
 void MiniLCDRenderer::updateDisplay() {
     updateTexture();
-    lcd.ddrMutex.lock();
     auto displayDataRam = lcd.displayDataRam;
-    lcd.ddrMutex.unlock();
     for (auto i = 0ull; i < topRow.size(); ++i) {
         unsigned char topInt = displayDataRam[(lcd.shiftPos + i) % 40];
         unsigned char topIntLittle = topInt & 0b00001111;

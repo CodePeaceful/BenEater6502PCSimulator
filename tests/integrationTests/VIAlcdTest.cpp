@@ -27,15 +27,14 @@ void display(components::MiniLCDRenderer& lcdRenderer) {
 void cycleSystem(components::MiniLCD& lcd, components::VersatileInterfaceAdapter& via, uint8_t& portA, bool& E, bool& RWLCD, bool& RSLCD) {
     // VIA cycle
     via.cycle();
-    // LCD cycle
-    lcd.cycle();
 
     // Update LCD pins from VIA port A
     RWLCD = (portA & 0x40) != 0; // VIA PA6 -> LCD RW
     RSLCD = (portA & 0x20) != 0; // VIA PA5 -> LCD RS
     E = (portA & 0x80) != 0;     // VIA PA7 -> LCD E
 
-
+    // LCD cycle
+    lcd.cycle();
 }
 
 // rs2 and rs3 are tied low externally
@@ -280,12 +279,12 @@ TEST(MiniLCDTestWithVIA, numberGoUp) {
             lcdDataWrite(lcd, via, data, RS0, RS1, RWB, PHI2, portA, E, RW, RS);
         }
 
-        uint32_t displayedNumber = logger.getDisplayedNumber();
-        ASSERT_EQ(displayedNumber, i) << "Displayed number mismatch at iteration " << i;
-
         // set cursor back to start
         data = 0x02; // Home
         lcdInstuction(lcd, via, data, RS0, RS1, RWB, PHI2, portA, E, RW, RS);
+
+        uint32_t displayedNumber = logger.getDisplayedNumber();
+        ASSERT_EQ(displayedNumber, i) << "Displayed number mismatch at iteration " << i;
     }
 }
 

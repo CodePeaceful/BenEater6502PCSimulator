@@ -63,13 +63,13 @@ void Computer::run() {
         RS2 = address & 0x0004;
         RS3 = address & 0x0008;
 
-        e = viaPortA & 0x80;
-        rw = viaPortA & 0x40;
-        rs = viaPortA & 0x20;
-
         rom.cycle();
         ram.cycle();
         via.cycle();
+
+        e = viaPortA & 0x80;
+        rw = viaPortA & 0x40;
+        rs = viaPortA & 0x20;
         lcd.cycle();
 
         auto halfCycleEnd = std::chrono::high_resolution_clock::now();
@@ -81,7 +81,7 @@ void Computer::run() {
 
 void Computer::display() {
     sf::RenderWindow window(sf::VideoMode(sf::Vector2u(256, 144)), "Ben Eater MiniPC Output", sf::State::Windowed);
-    window.setFramerateLimit(20);
+    window.setFramerateLimit(3);
     while (window.isOpen()) {
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
